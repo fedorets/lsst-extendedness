@@ -1,117 +1,135 @@
 # Quick Start
 
-Get up and running in 5 minutes.
+Get the LSST Extendedness Pipeline running in 5 minutes.
 
-## 1. Initialize the Database
+## Prerequisites
+
+| Requirement | Version | Install |
+|-------------|---------|---------|
+| Python | 3.12+ | [pyenv](https://github.com/pyenv/pyenv) |
+| PDM | 2.0+ | `pip install pdm` |
+| librdkafka | latest | See below |
+
+### System Dependencies
+
+=== "macOS"
+
+    ```bash
+    brew install librdkafka
+    ```
+
+=== "Ubuntu/Debian"
+
+    ```bash
+    sudo apt-get install -y librdkafka-dev
+    ```
+
+=== "RHEL/CentOS"
+
+    ```bash
+    sudo yum install -y librdkafka-devel
+    ```
+
+## Install
 
 ```bash
-lsst-extendedness db-init
+# Clone and install
+git clone https://github.com/westover/lsst-extendedness.git
+cd lsst-extendedness
+pdm install
+
+# Verify
+pdm run pytest tests/ -x -q
 ```
 
-This creates the SQLite database with all required tables and views.
-
-## 2. Test with Mock Data
+## First Run
 
 ```bash
-# Ingest 1000 mock alerts
-lsst-extendedness ingest --source mock --count 1000
+# 1. Initialize database
+pdm run lsst-extendedness db-init
 
-# Check database stats
-lsst-extendedness db-stats
+# 2. Ingest test data
+pdm run lsst-extendedness ingest --source mock --count 100
+
+# 3. Check it worked
+pdm run lsst-extendedness db-stats
 ```
 
-## 3. Query Your Data
+## Python API
 
-```bash
-# Recent alerts (last 7 days)
-lsst-extendedness query --recent 7
-
-# Export to CSV
-lsst-extendedness query --recent 7 --export alerts.csv
-```
-
-## 4. Interactive Python
+### Query with SQLiteStorage
 
 ```python
 from lsst_extendedness.storage import SQLiteStorage
-from lsst_extendedness.query import shortcuts
 
-# Connect to database
 storage = SQLiteStorage("data/lsst_extendedness.db")
+storage.initialize()
 
-# Get recent alerts as DataFrame
-df = shortcuts.recent(storage, days=7)
-print(f"Found {len(df)} alerts")
-
-# Filter by extendedness
-extended = df[df['extendedness_median'] > 0.7]
-print(f"Extended sources: {len(extended)}")
+count = storage.get_alert_count()
+print(f"Total alerts: {count}")
 ```
 
-## 5. Run with Real Data
+### Load Real ZTF Data (No Credentials)
 
-### ANTARES Source
+```python
+from lsst_extendedness.sources import FinkSource
+
+# FinkSource includes real ZTF alert fixtures
+with FinkSource() as source:
+    for alert in source.fetch_alerts(limit=5):
+        print(f"Alert {alert.alert_id}: RA={alert.ra:.2f}, Dec={alert.dec:.2f}")
+
+# Check for Solar System Objects
+with FinkSource() as source:
+    alerts = list(source.fetch_alerts(limit=10))
+    sso_alerts = [a for a in alerts if a.has_ss_source]
+    print(f"SSO alerts: {len(sso_alerts)}")
+```
+
+### Production: ANTARES Broker
+
+For real-time LSST alerts (requires credentials):
 
 ```bash
-# Set credentials
 export ANTARES_API_KEY="your-key"
 export ANTARES_API_SECRET="your-secret"
 
-# Ingest from ANTARES
-lsst-extendedness ingest --source antares \
+pdm run lsst-extendedness ingest \
+    --source antares \
     --topics extragalactic_staging \
     --limit 1000
 ```
 
-### Kafka Source
+## Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `pdm run lsst-extendedness db-init` | Initialize database |
+| `pdm run lsst-extendedness db-stats` | Show statistics |
+| `pdm run lsst-extendedness ingest --source mock --count N` | Ingest N mock alerts |
+| `pdm run lsst-extendedness ingest --source fink` | Ingest from Fink fixtures |
+| `pdm run lsst-extendedness query --recent 7` | Query last 7 days |
+| `pdm run pytest tests/ -v` | Run tests |
+
+## Troubleshooting
+
+### LSST RSP Environment
+
+If installing in an existing LSST RSP environment with dependency conflicts:
 
 ```bash
-# Use Kafka profile from config
-lsst-extendedness ingest --source kafka \
-    --profile production \
-    --duration 3600
+# Create isolated venv
+pdm venv create
+pdm use .venv/bin/python
+pdm install
 ```
 
-### File Source
+### httpx Conflict
 
-```bash
-# Import from CSV
-lsst-extendedness ingest --source file \
-    --path data/alerts.csv
-
-# Import from AVRO
-lsst-extendedness ingest --source file \
-    --path data/alerts.avro
-```
-
-## 6. Apply Filters
-
-```bash
-# Filter for point sources
-lsst-extendedness filter --preset point_sources
-
-# Filter for SSO candidates
-lsst-extendedness filter --preset sso_candidates
-
-# Custom filter
-lsst-extendedness filter \
-    --extendedness-min 0.3 \
-    --extendedness-max 0.7 \
-    --require-sso
-```
-
-## 7. Run Post-Processing
-
-```bash
-# Run all registered processors
-lsst-extendedness process --window 15
-
-# Run specific processor
-lsst-extendedness process --processor example --window 7
-```
+If you see `lsst-rsp requires httpx<0.28` errors, the package already pins `httpx<0.28` for compatibility.
 
 ## Next Steps
 
-- [Configuration Guide](configuration.md) - Customize settings
-- [Ingestion Pipeline](../guide/ingestion.md) - Detailed ingestion docs
-- [Post-Processing](../guide/processing.md) - Create custom processors
+- [Configuration](configuration.md) - Customize settings
+- [Ingestion Guide](../guide/ingestion.md) - Detailed ingestion docs
+- [API Reference](../api/sources.md) - Source implementations

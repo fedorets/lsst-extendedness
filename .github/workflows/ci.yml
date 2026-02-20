@@ -10,6 +10,8 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:  # Allow manual trigger
+  schedule:
+    - cron: '0 6 * * 0'  # Weekly on Sunday at 6 AM UTC (fresh install test)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -161,6 +163,68 @@ jobs:
           pdm run pytest tests/ \
             --cov=lsst_extendedness \
             --cov-fail-under=85
+
+  # ============================================================================
+  # FRESH INSTALL TEST (Docker-based)
+  # Runs on: schedule, manual trigger, or dependency file changes
+  # ============================================================================
+  fresh-install:
+    name: Fresh Install Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need history for file change detection
+
+      - name: Check for dependency changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            deps:
+              - 'pyproject.toml'
+              - 'pdm.lock'
+
+      - name: Test fresh install in Docker
+        # Run if: schedule, manual trigger, or dependency files changed
+        if: >
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'schedule' ||
+          steps.changes.outputs.deps == 'true'
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/app -w /app python:3.13-slim bash -c '
+            set -e
+            echo "=== Fresh Install Test ==="
+
+            # Install system dependencies
+            apt-get update && apt-get install -y librdkafka-dev git
+
+            # Install PDM
+            pip install pdm
+
+            # Install package
+            pdm config venv.in_project true
+            pdm install
+
+            # Verify installation
+            echo "=== Verifying installation ==="
+            pdm run python -c "from lsst_extendedness.storage import SQLiteStorage; print(\"SQLiteStorage: OK\")"
+            pdm run python -c "from lsst_extendedness.sources import FinkSource; print(\"FinkSource: OK\")"
+            pdm run python -c "from lsst_extendedness.sources import MockSource; print(\"MockSource: OK\")"
+
+            # Run quickstart commands
+            echo "=== Running quickstart commands ==="
+            pdm run lsst-extendedness db-init
+            pdm run lsst-extendedness ingest --source mock --count 10
+            pdm run lsst-extendedness db-stats
+
+            # Test FinkSource
+            echo "=== Testing FinkSource ==="
+            pdm run python -c "from lsst_extendedness.sources import FinkSource; source = FinkSource(); source.connect(); alerts = list(source.fetch_alerts(limit=5)); print(f\"Loaded {len(alerts)} alerts\"); source.close()"
+
+            echo "=== Fresh install test PASSED ==="
+          '
 
   # ============================================================================
   # ALL CHECKS PASSED

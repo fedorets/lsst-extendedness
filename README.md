@@ -1,184 +1,121 @@
 # LSST Extendedness Pipeline
 
-> **Note:** This project is under active development. APIs and interfaces may change.
+[![CI](https://github.com/westover/lsst-extendedness/actions/workflows/ci.yml/badge.svg)](https://github.com/westover/lsst-extendedness/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)](https://github.com/westover/lsst-extendedness)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://python.org)
 
-A pipeline for processing LSST alerts through the ANTARES broker, with a focus on minimoon detection via extendedness analysis.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        LSST Extendedness Pipeline                       │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  [ANTARES Filter] → [Kafka Topic] → [Daily Consumer] → [SQLite DB]     │
-│                                              │              │           │
-│                                              │    ┌─────────┴─────────┐ │
-│                                              │    │  alerts_raw       │ │
-│                                              │    │  alerts_filtered  │ │
-│                                              │    │  processed_sources│ │
-│                                              │    │  processing_results│ │
-│                                              │    └─────────┬─────────┘ │
-│                                              │              │           │
-│                                              ▼              ▼           │
-│                              ┌────────────────────────────────────────┐ │
-│                              │  Post-Processing (Minimoon Detection)  │ │
-│                              └────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## Features
-
-- **Flexible Input Sources**: Protocol-based design supports Kafka, file import, and mock data
-- **SQLite Storage**: Simple, fast, no server required
-- **Pydantic Models**: Full validation and type hints
-- **Systemd Timers**: Reliable daily scheduling
-- **Extensible Processing**: Plugin architecture for post-processors
-
-## Requirements
-
-- Python 3.12+
-- PDM (package manager)
-- librdkafka (for Kafka support)
+Pipeline for detecting **minimoon candidates** in the LSST alert stream from the Vera C. Rubin Observatory through extendedness analysis and orbit determination.
 
 ## Quick Start
 
 ```bash
-# Clone and install
 git clone https://github.com/westover/lsst-extendedness.git
 cd lsst-extendedness
-./scripts/bootstrap.sh
-
-# Or manual install
 pdm install
-
-# Initialize database
-make db-init
-
-# Run with mock data (no Kafka needed)
-lsst-extendedness ingest --source mock --count 1000
-
-# Check database
-make db-stats
+pdm run lsst-extendedness db-init
+pdm run lsst-extendedness ingest --source mock --count 100
+pdm run lsst-extendedness db-stats
 ```
 
-## Configuration
+See the full [Quick Start Guide](docs/getting-started/quickstart.md) for details.
 
-Copy and edit the configuration:
+## Architecture
 
-```bash
-cp config/default.toml config/local.toml
-# Edit config/local.toml with your settings
+```
+Alert Sources ──> Ingestion Pipeline ──> SQLite Storage ──> Post-Processing
+                                                │
+  ANTARES (production)                    alerts_raw
+  Fink    (real ZTF fixtures)             alerts_filtered
+  SpaceRocks (JPL Horizons)               processing_results
+  Mock    (testing)
 ```
 
-For Kafka, also configure:
+## Alert Sources
 
-```bash
-# Edit config/kafka_profiles.toml with your broker settings
+| Source | Use Case | Credentials |
+|--------|----------|-------------|
+| [ANTARESSource](docs/api/sources.md) | Production LSST alerts | API key |
+| [FinkSource](docs/api/sources.md) | Real ZTF data for testing | None |
+| [SpaceRocksSource](docs/api/sources.md) | Known asteroid orbits | None |
+| [KafkaSource](docs/api/sources.md) | Direct Kafka streaming | Broker config |
+| [FileSource](docs/api/sources.md) | AVRO/CSV import | None |
+| [MockSource](docs/api/sources.md) | Synthetic test data | None |
+
+## Documentation
+
+| Section | Description |
+|---------|-------------|
+| [Quick Start](docs/getting-started/quickstart.md) | Install and first run |
+| [Configuration](docs/getting-started/configuration.md) | TOML config, env vars, CLI flags |
+| **User Guide** | |
+| [Ingestion](docs/guide/ingestion.md) | Ingest from any source |
+| [Filtering](docs/guide/filtering.md) | Filter presets and custom filters |
+| [Post-Processing](docs/guide/processing.md) | Run analysis, create processors |
+| [Querying](docs/guide/querying.md) | Query and export data |
+| **API Reference** | |
+| [Models](docs/api/models.md) | AlertRecord, ProcessingResult, IngestionRun |
+| [Sources](docs/api/sources.md) | All sources + how to add your own |
+| [Storage](docs/api/storage.md) | SQLiteStorage, schema, views |
+| [Filter Engine](docs/api/filter.md) | FilterEngine, presets, SQL generation |
+| [Processing](docs/api/processing.md) | BaseProcessor, registry, plugin system |
+| **Operations** | |
+| [Systemd Timers](docs/deployment/systemd.md) | Automated scheduling |
+| [OpenStack VM](docs/deployment/openstack.md) | Deployment guide |
+| [Contributing](CONTRIBUTING.md) | Development workflow |
+
+## Extending the Pipeline
+
+### Add a New Source
+
+Implement the `AlertSource` protocol and register it:
+
+```python
+from lsst_extendedness.sources import register_source
+
+@register_source("my_source")
+class MySource:
+    source_name = "my_source"
+    def connect(self): ...
+    def fetch_alerts(self, limit=None): ...
+    def close(self): ...
 ```
 
-## Usage
+Full guide: [Sources API](docs/api/sources.md#creating-a-custom-source)
 
-### Ingestion
+### Add a Post-Processor
 
-```bash
-# From Kafka (production)
-lsst-extendedness ingest --config config/local.toml
+Subclass `BaseProcessor` and register it:
 
-# From files (backfill)
-lsst-extendedness ingest --source file --path data/alerts/*.avro
+```python
+from lsst_extendedness.processing import BaseProcessor, register_processor
 
-# Mock data (testing)
-lsst-extendedness ingest --source mock --count 500
+@register_processor("orbit_check")
+class OrbitCheckProcessor(BaseProcessor):
+    name = "orbit_check"
+    version = "1.0.0"
+    def process(self, df): ...
 ```
 
-### Queries
-
-```bash
-# Today's alerts
-make query-today
-
-# Minimoon candidates
-make query-minimoon
-
-# Interactive shell
-make query
-```
-
-### Post-Processing
-
-```bash
-# Run all processors
-make process
-
-# With custom window
-lsst-extendedness process --window 15
-```
+Full guide: [Processing API](docs/api/processing.md#creating-a-custom-processor)
 
 ## Development
 
 ```bash
-# Install dev dependencies
-make dev-install
-
-# Run tests
-make test
-
-# With coverage
-make test-cov
-
-# Lint and format
-make lint
-make format
-
-# Type check
-make typecheck
-
-# All checks
-make all-checks
+pdm install -G dev                             # Dev dependencies
+pdm run pytest tests/ -v                       # Tests (586 passing)
+pdm run pytest tests/ --cov=lsst_extendedness  # Coverage (96%+)
+pdm run ruff check src/ tests/                 # Lint
+pdm run mypy src/lsst_extendedness/            # Type check
+pdm run mkdocs serve                           # Docs at localhost:8000
 ```
 
-## Systemd Timers
+## CI/CD
 
-For automated daily runs:
-
-```bash
-# Install timers (runs at 2 AM and 4 AM)
-make timer-install
-
-# Check status
-make timer-status
-
-# View logs
-make timer-logs
-
-# Remove timers
-make timer-uninstall
-```
-
-## Project Structure
-
-```
-lsst-extendedness/
-├── src/lsst_extendedness/
-│   ├── models/          # Pydantic data models
-│   ├── sources/         # Input sources (Kafka, File, Mock)
-│   ├── storage/         # SQLite backend
-│   ├── ingest/          # Ingestion pipeline
-│   ├── filter/          # Configurable filtering
-│   ├── processing/      # Post-processor framework
-│   ├── query/           # Query shortcuts
-│   └── cli.py           # Command-line interface
-├── config/              # TOML configuration
-├── systemd/             # Timer units
-└── tests/               # Test suite
-```
-
-## Resources
-
-- [ANTARES Documentation](https://antares.noirlab.edu)
-- [LSST Alert Schema](https://github.com/lsst/alert_packet)
-- [APDB Schema](https://sdm-schemas.lsst.io/apdb.html)
+- Lint + type check on every push/PR
+- Tests on Python 3.12 and 3.13
+- Coverage gate at 85%
+- Dependabot with auto-merge for minor/patch
+- Docker fresh install test (weekly)
 
 ## License
 

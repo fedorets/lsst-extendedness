@@ -7,6 +7,7 @@ This module provides flexible input sources that implement the AlertSource proto
 - KafkaSource: Direct Kafka streaming with AVRO deserialization
 - FileSource: Import from AVRO/CSV files (for backfill or testing)
 - FinkSource: Fink broker data (real ZTF alerts, no credentials needed)
+- SpaceRocksSource: Known asteroid orbits from JPL Horizons (optional)
 - MockSource: Generate synthetic alerts (for testing)
 
 Example - Using different sources:
@@ -28,6 +29,13 @@ Example - Using different sources:
     >>> for alert in source.fetch_alerts():
     ...     process(alert)
     >>>
+    >>> # Known asteroids from JPL Horizons (requires space-rocks)
+    >>> from lsst_extendedness.sources import SpaceRocksSource
+    >>> source = SpaceRocksSource(objects=["Apophis", "Bennu"])
+    >>> source.connect()
+    >>> for alert in source.fetch_alerts():
+    ...     print(alert.trail_data)  # Contains orbital elements
+    >>>
     >>> # Testing: Mock
     >>> source = MockSource(count=100)
     >>> for alert in source.fetch_alerts():
@@ -43,6 +51,15 @@ from lsst_extendedness.sources.kafka import KafkaSource
 from lsst_extendedness.sources.mock import MockSource
 from lsst_extendedness.sources.protocol import AlertSource, register_source
 
+# SpaceRocksSource is optional - requires space-rocks package
+try:
+    from lsst_extendedness.sources.spacerocks import SpaceRocksSource
+
+    _SPACEROCKS_AVAILABLE = True
+except ImportError:
+    SpaceRocksSource = None  # type: ignore
+    _SPACEROCKS_AVAILABLE = False
+
 __all__ = [
     "ANTARESSource",
     "AlertSource",
@@ -50,5 +67,6 @@ __all__ = [
     "FinkSource",
     "KafkaSource",
     "MockSource",
+    "SpaceRocksSource",
     "register_source",
 ]

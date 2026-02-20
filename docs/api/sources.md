@@ -51,6 +51,35 @@ Import from CSV or AVRO files.
         - fetch_alerts
         - close
 
+### FinkSource
+
+Real ZTF alert data from the Fink broker. Uses bundled fixtures - no credentials needed.
+
+::: lsst_extendedness.sources.FinkSource
+    options:
+      show_root_heading: true
+      members:
+        - __init__
+        - connect
+        - fetch_alerts
+        - close
+
+### SpaceRocksSource
+
+Known asteroid orbital data from JPL Horizons (optional dependency).
+
+::: lsst_extendedness.sources.spacerocks.SpaceRocksSource
+    options:
+      show_root_heading: true
+      members:
+        - __init__
+        - connect
+        - fetch_alerts
+        - close
+
+!!! note "Optional Dependency"
+    Requires the `space-rocks` package: `pdm install -G spacerocks`
+
 ### MockSource
 
 Generate synthetic alerts for testing.
