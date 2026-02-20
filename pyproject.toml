@@ -50,7 +50,7 @@ dependencies = [
     # HTTP (for schema registry, etc.)
     # Pin httpx<0.28 for compatibility with lsst-rsp
     "requests>=2.28.0",
-    "httpx>=0.25.0,<0.28",
+    "httpx>=0.25.0,<0.29",
 
     # Logging
     "structlog>=23.2.0",
