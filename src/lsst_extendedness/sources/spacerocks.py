@@ -136,7 +136,7 @@ class SpaceRocksSource:
         """
         if not SPACEROCKS_AVAILABLE:
             raise ImportError(
-                "spacerocks package not installed. " "Install with: pip install space-rocks"
+                "spacerocks package not installed. Install with: pip install space-rocks"
             )
 
         self.objects = objects or self.DEFAULT_OBJECTS

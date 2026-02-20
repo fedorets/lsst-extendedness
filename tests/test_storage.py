@@ -152,8 +152,12 @@ class TestSQLiteStorageQuery:
         # Count before
         before = populated_db.get_alert_count()
 
-        # Delete some alerts
-        populated_db.execute("DELETE FROM alerts_raw WHERE has_ss_source = 0 LIMIT 5")
+        # Delete some alerts (use subquery instead of LIMIT on DELETE
+        # which requires SQLITE_ENABLE_UPDATE_DELETE_LIMIT)
+        populated_db.execute(
+            "DELETE FROM alerts_raw WHERE rowid IN "
+            "(SELECT rowid FROM alerts_raw WHERE has_ss_source = 0 LIMIT 5)"
+        )
 
         # Should have deleted some
         after = populated_db.get_alert_count()

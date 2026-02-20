@@ -96,3 +96,17 @@ Important AlertRecord fields: `extendedness_median`, `has_ss_source`, `ss_object
 - Coverage gate at 85%
 - Dependabot with auto-merge for minor/patch
 - Docker fresh install test (weekly + on dependency changes)
+
+## Standard Protocol After Push
+
+After every push, monitor CI:
+```bash
+gh run list --limit 3                          # Check run status
+gh run view <run-id> --log-failed              # View failure logs
+gh pr checks <pr-number>                       # Check PR status
+```
+Fix any CI failures before moving on to new work. Common issues:
+- **ruff format**: Run `pdm run ruff format src/ tests/` locally
+- **mypy**: Check new optional deps are in `ignore_missing_imports` in pyproject.toml
+- **Fresh Install Test**: Verify `config/default.toml` is valid TOML (no `null` values)
+- **SQLite portability**: Use subqueries instead of `DELETE...LIMIT` (Linux SQLite lacks the flag)

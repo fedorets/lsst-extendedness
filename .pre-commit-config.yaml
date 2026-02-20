@@ -7,114 +7,141 @@
 
 repos:
   # ============================================================================
-  # GENERAL CHECKS
+  # GENERAL CHECKS & AUTO-FIXERS
   # ============================================================================
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
       # Prevent giant files
-      - id: check-added-large-files
-        args: ['--maxkb=1000']
+  - id: check-added-large-files
+    args: [--maxkb=1000]
 
       # Check for files that would conflict on case-insensitive filesystems
-      - id: check-case-conflict
+  - id: check-case-conflict
 
-      # Ensure files end with newline
-      - id: end-of-file-fixer
+      # Ensure files end with newline (auto-fix)
+  - id: end-of-file-fixer
 
-      # Trim trailing whitespace
-      - id: trailing-whitespace
+      # Trim trailing whitespace (auto-fix)
+  - id: trailing-whitespace
 
-      # Check YAML/TOML syntax
-      - id: check-yaml
-        args: ['--unsafe']  # Allow Python-specific tags in mkdocs.yml
-      - id: check-toml
-
-      # Check JSON syntax
-      - id: check-json
-        exclude: '\.ipynb$'
+      # Check YAML/TOML/JSON syntax
+  - id: check-yaml
+    args: [--unsafe]        # Allow Python-specific tags in mkdocs.yml
+  - id: check-toml
+  - id: check-json
+    exclude: \.ipynb$
 
       # Check for merge conflict markers
-      - id: check-merge-conflict
+  - id: check-merge-conflict
 
       # Check for debugger imports
-      - id: debug-statements
+  - id: debug-statements
 
       # Detect private keys
-      - id: detect-private-key
+  - id: detect-private-key
+
+      # Fix mixed line endings (auto-fix)
+  - id: mixed-line-ending
+    args: [--fix=lf]
+
+      # Fix requirements.txt sorting (auto-fix)
+  - id: requirements-txt-fixer
 
   # ============================================================================
-  # PYTHON - RUFF (linting + formatting)
+  # TOML/YAML AUTO-FORMATTING
   # ============================================================================
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.8
-    hooks:
-      # Linting
-      - id: ruff
-        args: ['--fix', '--exit-non-zero-on-fix']
-        types_or: [python, pyi]
-
-      # Formatting
-      - id: ruff-format
-        types_or: [python, pyi]
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.14.0
+  hooks:
+  - id: pretty-format-toml
+    args: [--autofix]
+    exclude: pdm\.lock$
+  - id: pretty-format-yaml
+    args: [--autofix, --indent, '2']
+    exclude: mkdocs\.yml$        # mkdocs uses special YAML features
 
   # ============================================================================
-  # PYTHON - TYPE CHECKING (mypy)
+  # PYTHON - RUFF (linting + formatting, auto-fix)
   # ============================================================================
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - pydantic>=2.5.0
-          - types-requests>=2.31.0
-          - pandas-stubs>=2.1.0
-        args: ['--ignore-missing-imports']
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.8
+  hooks:
+      # Linting with auto-fix
+  - id: ruff
+    args: [--fix, --exit-non-zero-on-fix]
+    types_or: [python, pyi]
+
+      # Formatting (auto-fix)
+  - id: ruff-format
+    types_or: [python, pyi]
+
+  # ============================================================================
+  # PYTHON - SYNTAX MODERNIZATION (auto-fix)
+  # ============================================================================
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.17.0
+  hooks:
+  - id: pyupgrade
+    args: [--py312-plus]
+
+  # ============================================================================
+  # PYTHON - TYPE CHECKING
+  # ============================================================================
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.7.1
+  hooks:
+  - id: mypy
+    additional_dependencies:
+    - pydantic>=2.5.0
+    - types-requests>=2.31.0
+    - pandas-stubs>=2.1.0
+    args: [--ignore-missing-imports]
         # Only run on src files (not tests, for speed)
-        files: ^src/lsst_extendedness/
+    files: ^src/lsst_extendedness/
 
   # ============================================================================
   # SECURITY CHECKS
   # ============================================================================
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.6
-    hooks:
-      - id: bandit
-        args: ['-c', 'pyproject.toml']
-        additional_dependencies: ['bandit[toml]']
-        exclude: tests/
+- repo: https://github.com/PyCQA/bandit
+  rev: 1.7.6
+  hooks:
+  - id: bandit
+    args: [-c, pyproject.toml]
+    additional_dependencies: ['bandit[toml]']
+    exclude: tests/
 
   # ============================================================================
   # DOCUMENTATION
   # ============================================================================
-  - repo: https://github.com/pycqa/doc8
-    rev: v1.1.1
-    hooks:
-      - id: doc8
-        args: ['--max-line-length', '100']
-        types: [rst]
+- repo: https://github.com/pycqa/doc8
+  rev: v1.1.1
+  hooks:
+  - id: doc8
+    args: [--max-line-length, '100']
+    types: [rst]
 
   # ============================================================================
   # TESTING (pytest with coverage)
   # ============================================================================
-  - repo: local
-    hooks:
-      - id: pytest
-        name: pytest
-        entry: pdm run pytest tests/ --cov=lsst_extendedness --cov-fail-under=85 -q
-        language: system
-        types: [python]
-        pass_filenames: false
-        stages: [pre-commit]
+- repo: local
+  hooks:
+  - id: pytest
+    name: pytest
+    entry: pdm run pytest tests/ --cov=lsst_extendedness --cov-fail-under=85 -q
+    language: system
+    types: [python]
+    pass_filenames: false
+    stages: [pre-commit]
 
   # ============================================================================
   # COMMIT MESSAGES
   # ============================================================================
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.13.0
-    hooks:
-      - id: commitizen
-        stages: [commit-msg]
+- repo: https://github.com/commitizen-tools/commitizen
+  rev: v3.13.0
+  hooks:
+  - id: commitizen
+    stages: [commit-msg]
 
 # ============================================================================
 # CI SETTINGS
@@ -123,7 +150,7 @@ ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit hooks
   autofix_prs: true
-  autoupdate_branch: 'main'
+  autoupdate_branch: main
   autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
   autoupdate_schedule: weekly
   skip: []

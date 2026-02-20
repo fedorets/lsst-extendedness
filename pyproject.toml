@@ -236,6 +236,7 @@ module = [
     "fastavro.*",
     "astropy.*",
     "antares_client.*",
+    "spacerocks.*",
 ]
 ignore_missing_imports = true
 

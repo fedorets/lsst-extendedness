@@ -121,20 +121,20 @@ retention_days = 90
 # Enable filtering
 enabled = false
 
-# Extendedness thresholds (null = no filtering)
-extendedness_median_min = null
-extendedness_median_max = null
-extendedness_min_threshold = null
-extendedness_max_threshold = null
+# Extendedness thresholds (omit or set a value to enable filtering)
+# extendedness_median_min = 0.0
+# extendedness_median_max = 1.0
+# extendedness_min_threshold = 0.0
+# extendedness_max_threshold = 1.0
 
 # SSObject requirement
 require_sso = false  # true = require, false = no filter, "exclude" = exclude SSO
 
 # SNR threshold
-min_snr = null
+# min_snr = 5.0
 
 # Custom SQL WHERE clause (added to filters)
-custom_sql = null
+# custom_sql = "extendedness_median > 0.3"
 
 # ============================================================================
 # POST-PROCESSING CONFIGURATION
@@ -153,8 +153,8 @@ default_window_days = 15
 # Run processors automatically after ingestion
 run_after_ingest = false
 
-# Processors to run (null = all discovered)
-processors = null
+# Processors to run (omit to run all discovered)
+# processors = ["minimoon_detector"]
 
 # ============================================================================
 # QUERY CONFIGURATION
@@ -252,8 +252,8 @@ max_tracked_sources = 1000000
 # ============================================================================
 
 [retention]
-# CSV files (days, null = keep forever)
-csv_days = null
+# CSV files (days, omit to keep forever)
+# csv_days = 90
 
 # Cutouts (days, null = keep forever)
 cutout_days = 90

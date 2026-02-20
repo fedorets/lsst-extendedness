@@ -11,14 +11,14 @@ on:
     branches: [main]
   workflow_dispatch:  # Allow manual trigger
   schedule:
-    - cron: '0 6 * * 0'  # Weekly on Sunday at 6 AM UTC (fresh install test)
+  - cron: 0 6 * * 0      # Weekly on Sunday at 6 AM UTC (fresh install test)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  FORCE_COLOR: "1"  # Force color output
+  FORCE_COLOR: '1'  # Force color output
 
 jobs:
   # ============================================================================
@@ -28,40 +28,40 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
 
-      - name: Install PDM
-        run: pip install pdm
+    - name: Install PDM
+      run: pip install pdm
 
-      - name: Cache PDM dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            .venv
-            ~/.cache/pdm
-          key: pdm-${{ runner.os }}-${{ hashFiles('pdm.lock') }}
-          restore-keys: |
-            pdm-${{ runner.os }}-
+    - name: Cache PDM dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .venv
+          ~/.cache/pdm
+        key: pdm-${{ runner.os }}-${{ hashFiles('pdm.lock') }}
+        restore-keys: |
+          pdm-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: |
-          pdm config venv.in_project true
-          pdm install -G dev
+    - name: Install dependencies
+      run: |
+        pdm config venv.in_project true
+        pdm install -G dev
 
-      - name: Run Ruff linter
-        run: pdm run ruff check src/lsst_extendedness/ tests/
+    - name: Run Ruff linter
+      run: pdm run ruff check src/lsst_extendedness/ tests/
 
-      - name: Run Ruff formatter check
-        run: pdm run ruff format src/lsst_extendedness/ tests/ --check
+    - name: Run Ruff formatter check
+      run: pdm run ruff format src/lsst_extendedness/ tests/ --check
 
-      - name: Run mypy
-        run: pdm run mypy src/lsst_extendedness/
+    - name: Run mypy
+      run: pdm run mypy src/lsst_extendedness/
 
   # ============================================================================
   # TEST
@@ -72,54 +72,58 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ['3.12', '3.13']
+        include:
+        - python-version: 3.14-dev
+          experimental: true
+    continue-on-error: ${{ matrix.experimental || false }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y librdkafka-dev libopenblas-dev
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y librdkafka-dev libopenblas-dev
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install PDM
-        run: pip install pdm
+    - name: Install PDM
+      run: pip install pdm
 
-      - name: Cache PDM dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            .venv
-            ~/.cache/pdm
-          key: pdm-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
-          restore-keys: |
-            pdm-${{ runner.os }}-py${{ matrix.python-version }}-
+    - name: Cache PDM dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .venv
+          ~/.cache/pdm
+        key: pdm-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+        restore-keys: |
+          pdm-${{ runner.os }}-py${{ matrix.python-version }}-
 
-      - name: Install dependencies
-        run: |
-          pdm config venv.in_project true
-          pdm install -G dev
+    - name: Install dependencies
+      run: |
+        pdm config venv.in_project true
+        pdm install -G dev
 
-      - name: Run tests with coverage
-        run: |
-          pdm run pytest tests/ -v \
-            --cov=lsst_extendedness \
-            --cov-report=xml \
-            --cov-report=term-missing
+    - name: Run tests with coverage
+      run: |
+        pdm run pytest tests/ -v \
+          --cov=lsst_extendedness \
+          --cov-report=xml \
+          --cov-report=term-missing
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: matrix.python-version == '3.13'
-        with:
-          files: coverage.xml
-          fail_ci_if_error: false
-          verbose: true
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.13'
+      with:
+        files: coverage.xml
+        fail_ci_if_error: false
+        verbose: true
 
   # ============================================================================
   # COVERAGE GATE
@@ -129,40 +133,40 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y librdkafka-dev
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y librdkafka-dev
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
 
-      - name: Install PDM
-        run: pip install pdm
+    - name: Install PDM
+      run: pip install pdm
 
-      - name: Cache PDM dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            .venv
-            ~/.cache/pdm
-          key: pdm-${{ runner.os }}-py3.13-${{ hashFiles('pdm.lock') }}
+    - name: Cache PDM dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .venv
+          ~/.cache/pdm
+        key: pdm-${{ runner.os }}-py3.13-${{ hashFiles('pdm.lock') }}
 
-      - name: Install dependencies
-        run: |
-          pdm config venv.in_project true
-          pdm install -G dev
+    - name: Install dependencies
+      run: |
+        pdm config venv.in_project true
+        pdm install -G dev
 
-      - name: Check coverage threshold
-        run: |
-          pdm run pytest tests/ \
-            --cov=lsst_extendedness \
-            --cov-fail-under=85
+    - name: Check coverage threshold
+      run: |
+        pdm run pytest tests/ \
+          --cov=lsst_extendedness \
+          --cov-fail-under=85
 
   # ============================================================================
   # FRESH INSTALL TEST (Docker-based)
@@ -172,59 +176,59 @@ jobs:
     name: Fresh Install Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # Need history for file change detection
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2    # Need history for file change detection
 
-      - name: Check for dependency changes
-        id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            deps:
-              - 'pyproject.toml'
-              - 'pdm.lock'
+    - name: Check for dependency changes
+      id: changes
+      uses: dorny/paths-filter@v3
+      with:
+        filters: |
+          deps:
+            - 'pyproject.toml'
+            - 'pdm.lock'
 
-      - name: Test fresh install in Docker
-        # Run if: schedule, manual trigger, or dependency files changed
-        if: >
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          steps.changes.outputs.deps == 'true'
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/app -w /app python:3.13-slim bash -c '
-            set -e
-            echo "=== Fresh Install Test ==="
+    - name: Test fresh install in Docker
+      # Run if: schedule, manual trigger, or dependency files changed
+      if: >
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'schedule' ||
+        steps.changes.outputs.deps == 'true'
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/app -w /app python:3.13-slim bash -c '
+          set -e
+          echo "=== Fresh Install Test ==="
 
-            # Install system dependencies
-            apt-get update && apt-get install -y librdkafka-dev git
+          # Install system dependencies
+          apt-get update && apt-get install -y librdkafka-dev git
 
-            # Install PDM
-            pip install pdm
+          # Install PDM
+          pip install pdm
 
-            # Install package
-            pdm config venv.in_project true
-            pdm install
+          # Install package
+          pdm config venv.in_project true
+          pdm install
 
-            # Verify installation
-            echo "=== Verifying installation ==="
-            pdm run python -c "from lsst_extendedness.storage import SQLiteStorage; print(\"SQLiteStorage: OK\")"
-            pdm run python -c "from lsst_extendedness.sources import FinkSource; print(\"FinkSource: OK\")"
-            pdm run python -c "from lsst_extendedness.sources import MockSource; print(\"MockSource: OK\")"
+          # Verify installation
+          echo "=== Verifying installation ==="
+          pdm run python -c "from lsst_extendedness.storage import SQLiteStorage; print(\"SQLiteStorage: OK\")"
+          pdm run python -c "from lsst_extendedness.sources import FinkSource; print(\"FinkSource: OK\")"
+          pdm run python -c "from lsst_extendedness.sources import MockSource; print(\"MockSource: OK\")"
 
-            # Run quickstart commands
-            echo "=== Running quickstart commands ==="
-            pdm run lsst-extendedness db-init
-            pdm run lsst-extendedness ingest --source mock --count 10
-            pdm run lsst-extendedness db-stats
+          # Run quickstart commands
+          echo "=== Running quickstart commands ==="
+          pdm run lsst-extendedness db-init
+          pdm run lsst-extendedness ingest --source mock --count 10
+          pdm run lsst-extendedness db-stats
 
-            # Test FinkSource
-            echo "=== Testing FinkSource ==="
-            pdm run python -c "from lsst_extendedness.sources import FinkSource; source = FinkSource(); source.connect(); alerts = list(source.fetch_alerts(limit=5)); print(f\"Loaded {len(alerts)} alerts\"); source.close()"
+          # Test FinkSource
+          echo "=== Testing FinkSource ==="
+          pdm run python -c "from lsst_extendedness.sources import FinkSource; source = FinkSource(); source.connect(); alerts = list(source.fetch_alerts(limit=5)); print(f\"Loaded {len(alerts)} alerts\"); source.close()"
 
-            echo "=== Fresh install test PASSED ==="
-          '
+          echo "=== Fresh install test PASSED ==="
+        '
 
   # ============================================================================
   # ALL CHECKS PASSED
@@ -235,12 +239,12 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Check all jobs
-        run: |
-          if [[ "${{ needs.lint.result }}" != "success" ]] || \
-             [[ "${{ needs.test.result }}" != "success" ]] || \
-             [[ "${{ needs.coverage.result }}" != "success" ]]; then
-            echo "One or more checks failed"
-            exit 1
-          fi
-          echo "All checks passed!"
+    - name: Check all jobs
+      run: |
+        if [[ "${{ needs.lint.result }}" != "success" ]] || \
+           [[ "${{ needs.test.result }}" != "success" ]] || \
+           [[ "${{ needs.coverage.result }}" != "success" ]]; then
+          echo "One or more checks failed"
+          exit 1
+        fi
+        echo "All checks passed!"
