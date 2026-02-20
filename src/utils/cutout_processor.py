@@ -18,7 +18,7 @@ class CutoutProcessor:
     def __init__(self, output_dir):
         """
         Initialize cutout processor.
-        
+
         Parameters:
         -----------
         output_dir : str or Path
@@ -30,14 +30,14 @@ class CutoutProcessor:
     def extract_cutout(self, cutout_data, output_path):
         """
         Extract cutout from alert and save to file.
-        
+
         Parameters:
         -----------
         cutout_data : bytes
             Binary FITS cutout data
         output_path : str or Path
             Path to save cutout
-            
+
         Returns:
         --------
         bool
@@ -65,12 +65,12 @@ class CutoutProcessor:
     def get_cutout_statistics(self, cutout_path):
         """
         Get statistics from a cutout FITS file.
-        
+
         Parameters:
         -----------
         cutout_path : str or Path
             Path to FITS cutout
-            
+
         Returns:
         --------
         dict
@@ -84,14 +84,14 @@ class CutoutProcessor:
                     return None
 
                 stats = {
-                    'shape': data.shape,
-                    'dtype': str(data.dtype),
-                    'min': float(np.min(data)),
-                    'max': float(np.max(data)),
-                    'mean': float(np.mean(data)),
-                    'median': float(np.median(data)),
-                    'std': float(np.std(data)),
-                    'has_nan': bool(np.any(np.isnan(data))),
+                    "shape": data.shape,
+                    "dtype": str(data.dtype),
+                    "min": float(np.min(data)),
+                    "max": float(np.max(data)),
+                    "mean": float(np.mean(data)),
+                    "median": float(np.median(data)),
+                    "std": float(np.std(data)),
+                    "has_nan": bool(np.any(np.isnan(data))),
                 }
 
                 return stats
@@ -103,12 +103,12 @@ class CutoutProcessor:
     def validate_cutout(self, cutout_path):
         """
         Validate a cutout FITS file.
-        
+
         Parameters:
         -----------
         cutout_path : str or Path
             Path to FITS cutout
-            
+
         Returns:
         --------
         tuple
@@ -142,7 +142,7 @@ class CutoutProcessor:
     def create_thumbnail(self, cutout_path, thumbnail_path, size=(100, 100)):
         """
         Create a thumbnail image from a cutout.
-        
+
         Parameters:
         -----------
         cutout_path : str or Path
@@ -151,7 +151,7 @@ class CutoutProcessor:
             Path to save thumbnail (PNG)
         size : tuple
             Thumbnail size (width, height)
-            
+
         Returns:
         --------
         bool
@@ -199,7 +199,7 @@ class CutoutProcessor:
     def compare_cutouts(self, science_path, template_path, difference_path):
         """
         Compare science, template, and difference cutouts.
-        
+
         Parameters:
         -----------
         science_path : str or Path
@@ -208,7 +208,7 @@ class CutoutProcessor:
             Path to template cutout
         difference_path : str or Path
             Path to difference cutout
-            
+
         Returns:
         --------
         dict
@@ -217,41 +217,42 @@ class CutoutProcessor:
         try:
             results = {}
 
-            with fits.open(science_path) as sci_hdul, \
-                 fits.open(template_path) as tmp_hdul, \
-                 fits.open(difference_path) as diff_hdul:
-
+            with (
+                fits.open(science_path) as sci_hdul,
+                fits.open(template_path) as tmp_hdul,
+                fits.open(difference_path) as diff_hdul,
+            ):
                 sci_data = sci_hdul[0].data
                 tmp_data = tmp_hdul[0].data
                 diff_data = diff_hdul[0].data
 
                 # Check shapes match
                 if sci_data.shape != tmp_data.shape != diff_data.shape:
-                    results['shape_match'] = False
+                    results["shape_match"] = False
                     return results
 
-                results['shape_match'] = True
-                results['shape'] = sci_data.shape
+                results["shape_match"] = True
+                results["shape"] = sci_data.shape
 
                 # Calculate residual (should be ~0 if difference is correct)
                 residual = sci_data - tmp_data - diff_data
-                results['residual_rms'] = float(np.sqrt(np.mean(residual**2)))
+                results["residual_rms"] = float(np.sqrt(np.mean(residual**2)))
 
                 # Peak signal in difference image
-                results['diff_peak'] = float(np.max(np.abs(diff_data)))
-                results['diff_snr'] = float(np.max(diff_data) / np.std(diff_data))
+                results["diff_peak"] = float(np.max(np.abs(diff_data)))
+                results["diff_snr"] = float(np.max(diff_data) / np.std(diff_data))
 
                 return results
 
         except Exception as e:
             logger.error(f"Error comparing cutouts: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
 
 def extract_all_cutouts(alert, output_dir, dia_source_id):
     """
     Extract all cutouts from an alert packet.
-    
+
     Parameters:
     -----------
     alert : dict
@@ -260,7 +261,7 @@ def extract_all_cutouts(alert, output_dir, dia_source_id):
         Directory to save cutouts
     dia_source_id : str
         DIASource ID for filenames
-        
+
     Returns:
     --------
     dict
@@ -269,9 +270,9 @@ def extract_all_cutouts(alert, output_dir, dia_source_id):
     processor = CutoutProcessor(output_dir)
 
     cutouts = {
-        'science': alert.get('cutoutScience'),
-        'template': alert.get('cutoutTemplate'),
-        'difference': alert.get('cutoutDifference')
+        "science": alert.get("cutoutScience"),
+        "template": alert.get("cutoutTemplate"),
+        "difference": alert.get("cutoutDifference"),
     }
 
     paths = {}

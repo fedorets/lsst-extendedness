@@ -260,6 +260,265 @@ class TestDeserializer:
         assert alerts == []
 
 
+class TestPipelineDuplicateHandling:
+    """Tests for duplicate detection and handling."""
+
+    def test_skip_duplicates_enabled(self, temp_db):
+        """Test that duplicates are skipped when enabled."""
+        source = MockSource(count=20, seed=42)
+
+        # First run
+        options = PipelineOptions(batch_size=10, track_state=True)
+        pipeline = IngestionPipeline(source, temp_db, options)
+
+        with pipeline:
+            stats1 = pipeline.run()
+
+        assert stats1.alerts_stored == 20
+
+        # Second run with same source (same seed = same alert_ids)
+        source2 = MockSource(count=20, seed=42)
+        pipeline2 = IngestionPipeline(source2, temp_db, options)
+
+        with pipeline2:
+            stats2 = pipeline2.run()
+
+        # All should be skipped as duplicates
+        assert stats2.alerts_received == 20
+        assert stats2.alerts_stored == 0
+
+    def test_pipeline_writes_new_alerts(self, temp_db):
+        """Test that different alerts are written successfully.
+
+        Note: The MockSource generates alert_ids based on index (1000000 + index),
+        not on seed. Different seeds only affect random values like coordinates.
+        """
+        source = MockSource(count=10, seed=42)
+
+        # First run
+        options = PipelineOptions(batch_size=10, skip_duplicates=False, track_state=False)
+        pipeline = IngestionPipeline(source, temp_db, options)
+
+        with pipeline:
+            stats = pipeline.run()
+
+        # Should store all alerts
+        assert stats.alerts_stored == 10
+
+        # Verify in DB
+        db_stats = temp_db.get_stats()
+        assert db_stats.get("alerts_raw_count", 0) == 10
+
+
+class TestPipelineReassociations:
+    """Tests for reassociation tracking."""
+
+    def test_reassociation_counting(self, temp_db, mocker):
+        """Test that reassociations are counted."""
+        # Create mock source that yields alerts with reassociations
+        source = MockSource(count=10, seed=42)
+        source.connect()
+
+        # Patch the alerts to have some reassociations
+        original_fetch = source.fetch_alerts
+
+        def patched_fetch(limit=None):
+            for i, alert in enumerate(original_fetch(limit)):
+                if i < 3:  # First 3 alerts are reassociations
+                    alert.is_reassociation = True
+                    alert.reassociation_reason = "test"
+                yield alert
+
+        mocker.patch.object(source, "fetch_alerts", patched_fetch)
+
+        options = PipelineOptions(batch_size=10, track_state=False)
+        pipeline = IngestionPipeline(source, temp_db, options)
+        temp_db.initialize()
+
+        stats = pipeline.run()
+
+        assert stats.reassociations == 3
+        source.close()
+
+
+class TestPipelineErrorHandling:
+    """Tests for pipeline error handling."""
+
+    def test_batch_write_error(self, temp_db, mocker):
+        """Test handling of batch write errors."""
+        source = MockSource(count=10, seed=42)
+
+        # Patch storage to fail on write
+        mocker.patch.object(temp_db, "write_batch", side_effect=Exception("Database error"))
+
+        options = PipelineOptions(batch_size=5, track_state=False)
+        pipeline = IngestionPipeline(source, temp_db, options)
+
+        with pipeline:
+            stats = pipeline.run()
+
+        # Should have processed but failed to write
+        assert stats.alerts_received == 10
+        assert stats.alerts_stored == 0
+        assert stats.alerts_failed == 10  # 2 batches of 5
+
+    def test_pipeline_exception_records_failure(self, temp_db, mocker):
+        """Test that pipeline exceptions are recorded."""
+        source = MockSource(count=10, seed=42)
+
+        # Patch to raise exception during fetch
+        mocker.patch.object(source, "fetch_alerts", side_effect=Exception("Connection lost"))
+
+        options = PipelineOptions(track_state=False)
+        pipeline = IngestionPipeline(source, temp_db, options)
+
+        with pytest.raises(Exception, match="Connection lost"), pipeline:
+            pipeline.run()
+
+
+class TestPipelineStateTracking:
+    """Tests for state tracking integration."""
+
+    def test_state_tracker_integration(self, temp_db):
+        """Test that state tracker is used during pipeline run."""
+        source = MockSource(count=5, seed=42)
+
+        options = PipelineOptions(batch_size=5, track_state=True)
+        pipeline = IngestionPipeline(source, temp_db, options)
+
+        with pipeline:
+            stats = pipeline.run()
+
+        # Should have stored alerts
+        assert stats.alerts_stored == 5
+
+        # Either all new or all updated depending on prior state
+        total_tracked = stats.new_sources + stats.updated_sources
+        assert total_tracked == 5
+
+    def test_state_tracker_disabled(self, temp_db):
+        """Test pipeline runs correctly without state tracking."""
+        source = MockSource(count=5, seed=42)
+
+        options = PipelineOptions(batch_size=5, track_state=False)
+        pipeline = IngestionPipeline(source, temp_db, options)
+
+        with pipeline:
+            stats = pipeline.run()
+
+        # Should store alerts
+        assert stats.alerts_stored == 5
+
+        # No state tracking means no new/updated counts
+        assert stats.new_sources == 0
+        assert stats.updated_sources == 0
+
+
+class TestStateTrackerAdvanced:
+    """Additional tests for StateTracker functionality."""
+
+    def test_get_all_kafka_state(self, temp_db):
+        """Test getting all Kafka state entries."""
+        tracker = StateTracker(temp_db)
+
+        # Save multiple offsets
+        tracker.save_kafka_offset("topic1", 0, 100)
+        tracker.save_kafka_offset("topic1", 1, 200)
+        tracker.save_kafka_offset("topic2", 0, 300)
+
+        states = tracker.get_all_kafka_state()
+
+        assert len(states) == 3
+        # Verify each state has expected attributes
+        offsets = {(s.topic, s.partition): s.offset for s in states}
+        assert offsets[("topic1", 0)] == 100
+        assert offsets[("topic1", 1)] == 200
+        assert offsets[("topic2", 0)] == 300
+
+    def test_get_sources_in_window(self, temp_db):
+        """Test getting sources within a time window."""
+        tracker = StateTracker(temp_db)
+
+        # Create sources with different observation times
+        tracker.update_source_state(dia_source_id=1, mjd=60000.0, _alert_id=1)
+        tracker.update_source_state(dia_source_id=2, mjd=60005.0, _alert_id=2)
+        tracker.update_source_state(dia_source_id=3, mjd=60010.0, _alert_id=3)
+        tracker.update_source_state(dia_source_id=4, mjd=60015.0, _alert_id=4)
+
+        # Query a window that should include sources 2 and 3
+        sources = tracker.get_sources_in_window(60003.0, 60012.0)
+
+        # Should get sources with last_seen_mjd >= 60003 and first_seen_mjd <= 60012
+        source_ids = [s.dia_source_id for s in sources]
+        assert 2 in source_ids
+        assert 3 in source_ids
+
+    def test_cleanup_old_state(self, temp_db, mocker):
+        """Test cleanup of old state entries."""
+        tracker = StateTracker(temp_db)
+
+        # Create sources with different ages
+        tracker.update_source_state(dia_source_id=1, mjd=60000.0, _alert_id=1)  # Old
+        tracker.update_source_state(dia_source_id=2, mjd=60003.0, _alert_id=2)  # Old
+        tracker.update_source_state(dia_source_id=3, mjd=60010.0, _alert_id=3)  # Recent
+
+        # Mock the days_ago_mjd at the utils level where it's imported from
+        mocker.patch(
+            "lsst_extendedness.utils.time.days_ago_mjd",
+            return_value=60005.0,
+        )
+
+        # Cleanup entries older than threshold
+        removed = tracker.cleanup_old_state(days=90)
+
+        # Should have removed 2 entries (sources 1 and 2)
+        assert removed == 2
+
+        # Verify source 3 still exists
+        state = tracker.get_source_state(3)
+        assert state is not None
+        assert state.dia_source_id == 3
+
+
+class TestRunIngestionFunction:
+    """Tests for run_ingestion convenience function."""
+
+    def test_run_ingestion(self, temp_db):
+        """Test the run_ingestion convenience function."""
+        from lsst_extendedness.ingest.pipeline import run_ingestion
+
+        source = MockSource(count=15, seed=42)
+
+        stats = run_ingestion(
+            source,
+            temp_db,
+            batch_size=5,
+            max_alerts=15,
+            dry_run=False,
+        )
+
+        assert stats.alerts_received == 15
+        assert stats.alerts_stored == 15
+
+    def test_run_ingestion_dry_run(self, temp_db):
+        """Test run_ingestion in dry run mode."""
+        from lsst_extendedness.ingest.pipeline import run_ingestion
+
+        source = MockSource(count=10, seed=42)
+
+        stats = run_ingestion(
+            source,
+            temp_db,
+            dry_run=True,
+        )
+
+        assert stats.alerts_stored == 10
+
+        # Verify nothing written
+        db_stats = temp_db.get_stats()
+        assert db_stats.get("alerts_raw_count", 0) == 0
+
+
 # Fixtures
 
 

@@ -261,6 +261,36 @@ class TestSQLiteStorageViews:
             assert row["has_ss_source"] == 1
 
 
+class TestSQLiteStorageProcessing:
+    """Tests for processing-related operations."""
+
+    def test_get_alerts_for_processing(self, populated_db):
+        """Test getting alerts for processing."""
+        alerts = populated_db.get_alerts_for_processing(window_days=30)
+
+        # Should return some alerts
+        assert len(alerts) > 0
+        # All should be dicts
+        for alert in alerts:
+            assert isinstance(alert, dict)
+            assert "alert_id" in alert or "id" in alert
+
+    def test_get_alerts_for_processing_with_limit(self, populated_db):
+        """Test getting alerts for processing with limit."""
+        alerts = populated_db.get_alerts_for_processing(window_days=30, limit=5)
+
+        assert len(alerts) <= 5
+
+    def test_vacuum(self, populated_db):
+        """Test vacuum optimization."""
+        # Just verify it doesn't error
+        populated_db.vacuum()
+
+        # Verify database still works after vacuum
+        count = populated_db.get_alert_count()
+        assert count == 50
+
+
 class TestSQLiteStorageBackup:
     """Tests for backup operations."""
 
@@ -292,3 +322,154 @@ class TestSQLiteStorageContextManager:
 
         # Connection should be closed
         assert storage._connection is None
+
+
+class TestSchemaFunctions:
+    """Tests for schema module functions."""
+
+    def test_get_schema_sql(self):
+        """Test getting complete schema SQL."""
+        from lsst_extendedness.storage.schema import SCHEMA_VERSION, get_schema_sql
+
+        sql = get_schema_sql()
+
+        assert isinstance(sql, str)
+        assert "CREATE TABLE" in sql
+        assert "CREATE INDEX" in sql
+        assert "CREATE VIEW" in sql
+        assert "CREATE TRIGGER" in sql
+        assert str(SCHEMA_VERSION) in sql
+
+    def test_create_schema_without_triggers(self, tmp_path):
+        """Test create_schema with triggers disabled."""
+        import sqlite3
+
+        from lsst_extendedness.storage.schema import create_schema
+
+        db_path = tmp_path / "no_triggers.db"
+        conn = sqlite3.connect(db_path)
+
+        # Create without triggers
+        create_schema(conn, include_triggers=False)
+
+        # Tables should exist
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = {row[0] for row in cursor.fetchall()}
+
+        assert "alerts_raw" in tables
+        assert "processing_results" in tables
+
+        # Trigger should not exist
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='trigger'")
+        triggers = [row[0] for row in cursor.fetchall()]
+        assert len(triggers) == 0
+
+        conn.close()
+
+    def test_get_schema_version(self, tmp_path):
+        """Test getting schema version."""
+        import sqlite3
+
+        from lsst_extendedness.storage.schema import (
+            SCHEMA_VERSION,
+            create_schema,
+            get_schema_version,
+        )
+
+        db_path = tmp_path / "versioned.db"
+        conn = sqlite3.connect(db_path)
+
+        # Before schema creation, version should be None
+        assert get_schema_version(conn) is None
+
+        # Create schema
+        create_schema(conn)
+
+        # Version should be current
+        version = get_schema_version(conn)
+        assert version == SCHEMA_VERSION
+
+        conn.close()
+
+    def test_needs_migration_fresh_db(self, tmp_path):
+        """Test needs_migration with fresh database."""
+        import sqlite3
+
+        from lsst_extendedness.storage.schema import needs_migration
+
+        db_path = tmp_path / "fresh.db"
+        conn = sqlite3.connect(db_path)
+
+        # Fresh DB needs migration (no schema)
+        assert needs_migration(conn) is True
+
+        conn.close()
+
+    def test_needs_migration_current(self, tmp_path):
+        """Test needs_migration with current schema."""
+        import sqlite3
+
+        from lsst_extendedness.storage.schema import create_schema, needs_migration
+
+        db_path = tmp_path / "current.db"
+        conn = sqlite3.connect(db_path)
+
+        # Create current schema
+        create_schema(conn)
+
+        # Should not need migration
+        assert needs_migration(conn) is False
+
+        conn.close()
+
+    def test_migrate_fresh_db(self, tmp_path):
+        """Test migrate on fresh database."""
+        import sqlite3
+
+        from lsst_extendedness.storage.schema import (
+            SCHEMA_VERSION,
+            get_schema_version,
+            migrate,
+        )
+
+        db_path = tmp_path / "to_migrate.db"
+        conn = sqlite3.connect(db_path)
+
+        # Should create schema on fresh DB
+        migrate(conn)
+
+        # Schema should be at current version
+        assert get_schema_version(conn) == SCHEMA_VERSION
+
+        conn.close()
+
+    def test_migrate_old_version(self, tmp_path):
+        """Test migrate from older schema version."""
+        import sqlite3
+
+        from lsst_extendedness.storage.schema import (
+            SCHEMA_VERSION,
+            create_schema,
+            get_schema_version,
+            migrate,
+        )
+
+        db_path = tmp_path / "old.db"
+        conn = sqlite3.connect(db_path)
+
+        # Create current schema first
+        create_schema(conn)
+
+        # Manually set to old version
+        conn.execute("UPDATE schema_info SET value = '0' WHERE key = 'version'")
+        conn.commit()
+
+        assert get_schema_version(conn) == 0
+
+        # Migrate should update to current version
+        migrate(conn)
+
+        assert get_schema_version(conn) == SCHEMA_VERSION
+
+        conn.close()

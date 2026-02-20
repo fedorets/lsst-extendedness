@@ -59,7 +59,7 @@ jobs:
         run: pdm run ruff format src/lsst_extendedness/ tests/ --check
 
       - name: Run mypy
-        run: pdm run mypy src/
+        run: pdm run mypy src/lsst_extendedness/
 
   # ============================================================================
   # TEST

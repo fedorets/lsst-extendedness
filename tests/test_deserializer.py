@@ -364,3 +364,66 @@ class TestDeserializeAlert:
 
         assert alert.alert_id == 12345
         mock_deserialize.assert_called_once_with(b"DATA", schema)
+
+
+class TestDeserializeAvroImportError:
+    """Tests for fastavro import error handling."""
+
+    def test_fastavro_import_error(self):
+        """Test that ImportError is raised when fastavro is not installed."""
+        import builtins
+        import sys
+
+        # Force reload of module with fastavro mocked out
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "fastavro":
+                raise ImportError("No module named 'fastavro'")
+            return original_import(name, *args, **kwargs)
+
+        try:
+            builtins.__import__ = mock_import
+            # Clear cached import
+            if "fastavro" in sys.modules:
+                del sys.modules["fastavro"]
+
+            # Import the function fresh
+            from importlib import reload
+
+            import lsst_extendedness.ingest.deserializer as deserializer_module
+
+            # This should raise ImportError when called
+            with pytest.raises(ImportError, match="fastavro is required"):
+                deserializer_module.deserialize_avro(b"test_data")
+        finally:
+            builtins.__import__ = original_import
+
+
+class TestDeserializeAvroTypeValidation:
+    """Tests for type validation in deserialization."""
+
+    def test_deserialize_non_dict_raises(self, mocker):
+        """Test that non-dict deserialization result raises ValueError."""
+        from lsst_extendedness.ingest.deserializer import deserialize_avro
+
+        # Mock fastavro module
+        mock_fastavro = mocker.MagicMock()
+        # Return a list instead of dict
+        mock_fastavro.reader.return_value = iter([[1, 2, 3]])
+        mocker.patch.dict("sys.modules", {"fastavro": mock_fastavro})
+
+        with pytest.raises(ValueError, match="Expected dict"):
+            deserialize_avro(b"DATA")
+
+    def test_deserialize_string_raises(self, mocker):
+        """Test that string deserialization result raises ValueError."""
+        from lsst_extendedness.ingest.deserializer import deserialize_avro
+
+        # Mock fastavro module
+        mock_fastavro = mocker.MagicMock()
+        mock_fastavro.reader.return_value = iter(["not a dict"])
+        mocker.patch.dict("sys.modules", {"fastavro": mock_fastavro})
+
+        with pytest.raises(ValueError, match="Expected dict"):
+            deserialize_avro(b"DATA")

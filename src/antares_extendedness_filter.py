@@ -18,23 +18,24 @@ The downstream consumer (lsst_alert_consumer.py) is responsible for extracting
 these fields from the alert packets and storing them in CSV files.
 """
 
+
 def extendedness_filter(locus):
     """
     ANTARES filter function that filters alerts based on extendedness criteria,
     SSSource presence, and recent reassociations.
-    
+
     This filter checks:
     1. extendednessMedian, extendednessMin, and extendednessMax from DIASource table
     2. Presence of SSSource schema (regardless of values)
     3. Recent SSObject reassociation (ssObjectReassocTimeMjdTai close to observation time)
-    
+
     You'll need to configure the threshold values based on your science case.
-    
+
     Parameters:
     -----------
     locus : antares.devkit.locus.Locus
         ANTARES locus object containing alert information
-        
+
     Returns:
     --------
     bool
@@ -64,9 +65,9 @@ def extendedness_filter(locus):
     # Extract extendedness properties from the alert
     # These come from the DIASource table fields
     try:
-        extendedness_median = latest_alert.properties.get('extendednessMedian')
-        extendedness_min = latest_alert.properties.get('extendednessMin')
-        extendedness_max = latest_alert.properties.get('extendednessMax')
+        extendedness_median = latest_alert.properties.get("extendednessMedian")
+        extendedness_min = latest_alert.properties.get("extendednessMin")
+        extendedness_max = latest_alert.properties.get("extendednessMax")
 
         # Check if all required fields are present
         if None in [extendedness_median, extendedness_min, extendedness_max]:
@@ -86,34 +87,41 @@ def extendedness_filter(locus):
         ssobject_reassoc_time = None
 
         # Method 1: Check via alert properties (if ANTARES exposes it this way)
-        if hasattr(latest_alert, 'properties'):
+        if hasattr(latest_alert, "properties"):
             # Check for any SSSource-related fields
-            sssource_fields = ['ssObjectId', 'ssObject']
-            has_sssource = any(latest_alert.properties.get(field) is not None
-                             for field in sssource_fields)
+            sssource_fields = ["ssObjectId", "ssObject"]
+            has_sssource = any(
+                latest_alert.properties.get(field) is not None for field in sssource_fields
+            )
 
             # Get reassociation timestamp if available
-            ssobject_reassoc_time = latest_alert.properties.get('ssObjectReassocTimeMjdTai')
+            ssobject_reassoc_time = latest_alert.properties.get("ssObjectReassocTimeMjdTai")
 
         # Method 2: Check via raw alert packet (if available)
-        if not has_sssource and hasattr(latest_alert, 'packet'):
-            # The ssObject field in LSST alert packets indicates SSSource attachment
-            if 'ssObject' in latest_alert.packet and latest_alert.packet['ssObject'] is not None:
-                has_sssource = True
-                if ssobject_reassoc_time is None:
-                    ssobject_reassoc_time = latest_alert.packet['ssObject'].get('ssObjectReassocTimeMjdTai')
+        # The ssObject field in LSST alert packets indicates SSSource attachment
+        if (
+            not has_sssource
+            and hasattr(latest_alert, "packet")
+            and "ssObject" in latest_alert.packet
+            and latest_alert.packet["ssObject"] is not None
+        ):
+            has_sssource = True
+            if ssobject_reassoc_time is None:
+                ssobject_reassoc_time = latest_alert.packet["ssObject"].get(
+                    "ssObjectReassocTimeMjdTai"
+                )
 
         # Method 3: Check via locus tags (ANTARES may tag SSO associations)
-        if not has_sssource and hasattr(locus, 'tags'):
+        if not has_sssource and hasattr(locus, "tags"):
             # Check for solar system object tags
-            sso_tags = ['solar_system', 'sso', 'asteroid', 'comet']
+            sso_tags = ["solar_system", "sso", "asteroid", "comet"]
             has_sssource = any(tag in locus.tags for tag in sso_tags)
 
         # Check for recent reassociation
         is_recent_reassoc = False
         if has_sssource and ssobject_reassoc_time is not None:
             # Get observation time
-            obs_time = latest_alert.properties.get('midPointTai')
+            obs_time = latest_alert.properties.get("midPointTai")
 
             if obs_time is not None:
                 # Check if reassociation is recent (within window of observation)
@@ -146,7 +154,14 @@ filter_version = "2.0.0"
 filter_description = "Filters LSST alerts based on DIASource extendedness, SSSource presence, and recent SSObject reassociations"
 
 # Tags for categorizing this filter
-tags = ["extended_sources", "morphology", "galaxies", "solar_system_objects", "sso", "reassociation"]
+tags = [
+    "extended_sources",
+    "morphology",
+    "galaxies",
+    "solar_system_objects",
+    "sso",
+    "reassociation",
+]
 
 # This is the main entry point that ANTARES will call
 run = extendedness_filter

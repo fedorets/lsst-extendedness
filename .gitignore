@@ -119,3 +119,6 @@ site/
 .env.*.local
 secrets/
 uv.lock
+
+# Documentation build
+site/

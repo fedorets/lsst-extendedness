@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-02-20T07:52:01.709663Z",
+  "source": "Fink Public API (api.fink-portal.org)",
+  "objects_queried": [
+    "ZTF21aaxtctv",
+    "ZTF18aaqjovh",
+    "ZTF19aarioci",
+    "ZTF20acvfraq",
+    "ZTF21abfmbix"
+  ],
+  "sso_queried": [
+    "8467",
+    "1620",
+    "433"
+  ],
+  "total_object_alerts": 23,
+  "total_sso_alerts": 15,
+  "notes": [
+    "These are real ZTF alerts from the Fink broker",
+    "Data structure is similar to expected LSST alerts",
+    "Regenerate with: python scripts/download_fink_fixtures.py"
+  ]
+}

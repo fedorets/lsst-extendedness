@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 def create_consumer(config):
     """
     Create and configure a Kafka consumer.
-    
+
     Parameters:
     -----------
     config : dict
         Kafka consumer configuration
-        
+
     Returns:
     --------
     Consumer
@@ -36,21 +36,19 @@ def create_consumer(config):
 def test_connection(config):
     """
     Test connection to Kafka broker.
-    
+
     Parameters:
     -----------
     config : dict
         Kafka configuration
-        
+
     Returns:
     --------
     bool
         True if connection successful
     """
     try:
-        admin_client = AdminClient({
-            'bootstrap.servers': config['bootstrap.servers']
-        })
+        admin_client = AdminClient({"bootstrap.servers": config["bootstrap.servers"]})
 
         metadata = admin_client.list_topics(timeout=10)
         logger.info(f"Connected to Kafka cluster: {metadata.cluster_id}")
@@ -63,25 +61,24 @@ def test_connection(config):
 def list_topics(config):
     """
     List available Kafka topics.
-    
+
     Parameters:
     -----------
     config : dict
         Kafka configuration
-        
+
     Returns:
     --------
     list
         List of topic names
     """
     try:
-        admin_client = AdminClient({
-            'bootstrap.servers': config['bootstrap.servers']
-        })
+        admin_client = AdminClient({"bootstrap.servers": config["bootstrap.servers"]})
 
         metadata = admin_client.list_topics(timeout=10)
-        topics = [topic for topic in metadata.topics.keys()
-                 if not topic.startswith('_')]  # Exclude internal topics
+        topics = [
+            topic for topic in metadata.topics if not topic.startswith("_")
+        ]  # Exclude internal topics
 
         return sorted(topics)
     except Exception as e:
@@ -92,23 +89,21 @@ def list_topics(config):
 def get_topic_info(config, topic_name):
     """
     Get information about a specific topic.
-    
+
     Parameters:
     -----------
     config : dict
         Kafka configuration
     topic_name : str
         Name of the topic
-        
+
     Returns:
     --------
     dict
         Topic information (partitions, replicas, etc.)
     """
     try:
-        admin_client = AdminClient({
-            'bootstrap.servers': config['bootstrap.servers']
-        })
+        admin_client = AdminClient({"bootstrap.servers": config["bootstrap.servers"]})
 
         metadata = admin_client.list_topics(timeout=10)
 
@@ -119,18 +114,20 @@ def get_topic_info(config, topic_name):
         topic_metadata = metadata.topics[topic_name]
 
         info = {
-            'name': topic_name,
-            'partitions': len(topic_metadata.partitions),
-            'partition_details': []
+            "name": topic_name,
+            "partitions": len(topic_metadata.partitions),
+            "partition_details": [],
         }
 
         for partition_id, partition_metadata in topic_metadata.partitions.items():
-            info['partition_details'].append({
-                'id': partition_id,
-                'leader': partition_metadata.leader,
-                'replicas': partition_metadata.replicas,
-                'isrs': partition_metadata.isrs
-            })
+            info["partition_details"].append(
+                {
+                    "id": partition_id,
+                    "leader": partition_metadata.leader,
+                    "replicas": partition_metadata.replicas,
+                    "isrs": partition_metadata.isrs,
+                }
+            )
 
         return info
     except Exception as e:
@@ -141,7 +138,7 @@ def get_topic_info(config, topic_name):
 def get_consumer_lag(consumer, topic, partitions=None):
     """
     Get consumer lag for a topic.
-    
+
     Parameters:
     -----------
     consumer : Consumer
@@ -150,14 +147,13 @@ def get_consumer_lag(consumer, topic, partitions=None):
         Topic name
     partitions : list, optional
         List of partition IDs to check (default: all)
-        
+
     Returns:
     --------
     dict
         Consumer lag per partition
     """
     try:
-
         # Get current assignment
         assignment = consumer.assignment()
 
@@ -176,14 +172,14 @@ def get_consumer_lag(consumer, topic, partitions=None):
             committed_offset = committed.offset if committed else -1
 
             # Get high water mark
-            low, high = consumer.get_watermark_offsets(tp, timeout=5.0)
+            _low, high = consumer.get_watermark_offsets(tp, timeout=5.0)
 
             lag = high - committed_offset if committed_offset >= 0 else high
 
             lag_info[tp.partition] = {
-                'committed_offset': committed_offset,
-                'high_water_mark': high,
-                'lag': lag
+                "committed_offset": committed_offset,
+                "high_water_mark": high,
+                "lag": lag,
             }
 
         return lag_info
@@ -195,7 +191,7 @@ def get_consumer_lag(consumer, topic, partitions=None):
 def seek_to_beginning(consumer, topic):
     """
     Seek consumer to beginning of topic.
-    
+
     Parameters:
     -----------
     consumer : Consumer
@@ -216,8 +212,7 @@ def seek_to_beginning(consumer, topic):
         partitions = metadata.topics[topic].partitions
 
         # Create TopicPartition objects for seeking
-        tps = [TopicPartition(topic, partition_id, 0)
-               for partition_id in partitions.keys()]
+        tps = [TopicPartition(topic, partition_id, 0) for partition_id in partitions]
 
         # Seek to beginning
         consumer.seek(tps[0])  # Seek first partition as example
@@ -230,14 +225,14 @@ def seek_to_beginning(consumer, topic):
 def get_message_count_estimate(config, topic):
     """
     Get rough estimate of message count in topic.
-    
+
     Parameters:
     -----------
     config : dict
         Kafka configuration
     topic : str
         Topic name
-        
+
     Returns:
     --------
     int
@@ -246,11 +241,7 @@ def get_message_count_estimate(config, topic):
     try:
         from confluent_kafka import TopicPartition
 
-        consumer = Consumer({
-            **config,
-            'group.id': 'temp-counter',
-            'enable.auto.commit': False
-        })
+        consumer = Consumer({**config, "group.id": "temp-counter", "enable.auto.commit": False})
 
         # Get topic metadata
         metadata = consumer.list_topics(topic, timeout=10)
@@ -264,10 +255,10 @@ def get_message_count_estimate(config, topic):
 
         total_messages = 0
 
-        for partition_id in partitions.keys():
+        for partition_id in partitions:
             tp = TopicPartition(topic, partition_id)
             low, high = consumer.get_watermark_offsets(tp, timeout=5.0)
-            total_messages += (high - low)
+            total_messages += high - low
 
         consumer.close()
 

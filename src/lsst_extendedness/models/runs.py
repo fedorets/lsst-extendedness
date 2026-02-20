@@ -16,13 +16,13 @@ Example:
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
-class RunStatus(str, Enum):
+class RunStatus(StrEnum):
     """Status of an ingestion or processing run."""
 
     PENDING = "pending"
@@ -85,7 +85,7 @@ class IngestionRun(BaseModel):
     # Additional metadata
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional run metadata")
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[misc]
     @property
     def duration_seconds(self) -> float | None:
         """Calculate run duration in seconds.
@@ -97,7 +97,7 @@ class IngestionRun(BaseModel):
             return None
         return (self.completed_at - self.started_at).total_seconds()
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[misc]
     @property
     def processing_rate(self) -> float | None:
         """Calculate alerts processed per second.
@@ -110,7 +110,7 @@ class IngestionRun(BaseModel):
             return None
         return self.alerts_ingested / duration
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[misc]
     @property
     def success_rate(self) -> float:
         """Calculate success rate as a percentage.
@@ -123,13 +123,13 @@ class IngestionRun(BaseModel):
             return 100.0
         return (self.alerts_ingested / total) * 100
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[misc]
     @property
     def is_running(self) -> bool:
         """Check if the run is still in progress."""
         return self.status == RunStatus.RUNNING
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[misc]
     @property
     def is_complete(self) -> bool:
         """Check if the run completed successfully."""

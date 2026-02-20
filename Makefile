@@ -9,7 +9,8 @@
         ingest query process query-today query-minimoon query-recent \
         timer-install timer-uninstall timer-status timer-logs \
         shell profile-ingest generate-sample-data validate-config \
-        setup-system bootstrap deploy health-check env-info clean
+        setup-system bootstrap deploy health-check env-info clean \
+        docs docs-serve docs-build
 
 # Default configuration
 CONFIG ?= config/default.toml
@@ -69,6 +70,10 @@ help:
 	@echo "  make timer-uninstall  Stop + remove timers"
 	@echo "  make timer-status     Check timer status"
 	@echo "  make timer-logs       Tail timer logs"
+	@echo ""
+	@echo "$(GREEN)Documentation:$(NC)"
+	@echo "  make docs             Build documentation"
+	@echo "  make docs-serve       Serve docs locally (http://localhost:8000)"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env-info         Show environment information"
@@ -242,6 +247,21 @@ timer-status:
 timer-logs:
 	@echo "$(BLUE)Timer logs (press Ctrl+C to exit):$(NC)"
 	journalctl --user -u lsst-ingest -u lsst-process -f
+
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+
+docs: docs-build
+	@echo "$(GREEN)Documentation built in site/$(NC)"
+
+docs-build:
+	@echo "$(BLUE)Building documentation...$(NC)"
+	pdm run mkdocs build
+
+docs-serve:
+	@echo "$(BLUE)Serving documentation at http://localhost:8000$(NC)"
+	pdm run mkdocs serve
 
 # ============================================================================
 # UTILITIES

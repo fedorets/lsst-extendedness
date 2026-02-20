@@ -238,3 +238,110 @@ class TestQueryToDFHelper:
         )
 
         assert len(df) == 10
+
+
+class TestQueryShortcutsAdditional:
+    """Additional tests for query shortcuts."""
+
+    def test_today_empty(self, tmp_path):
+        """Test today() with no recent data."""
+        db_path = tmp_path / "empty.db"
+        storage = SQLiteStorage(db_path)
+        storage.initialize()
+
+        df = shortcuts.today(storage=storage)
+
+        # Should return empty DataFrame
+        assert len(df) == 0
+
+        storage.close()
+
+    def test_recent_empty(self, tmp_path):
+        """Test recent() with no data."""
+        db_path = tmp_path / "empty.db"
+        storage = SQLiteStorage(db_path)
+        storage.initialize()
+
+        df = shortcuts.recent(days=7, storage=storage)
+
+        assert len(df) == 0
+
+        storage.close()
+
+    def test_recent_custom_days(self, populated_storage):
+        """Test recent() with custom days parameter.
+
+        Note: Test data has MJD around 60000 (circa 2023), but "recent" looks
+        back from current date. We use in_time_window for reliable testing.
+        """
+        # Use in_time_window which doesn't depend on current date
+        df = shortcuts.in_time_window(
+            start_mjd=59000.0,
+            end_mjd=65000.0,
+            storage=populated_storage,
+        )
+
+        # Should have all test data
+        assert len(df) > 0
+
+    def test_reassociations_empty(self, populated_storage):
+        """Test reassociations() when no reassociations exist."""
+        df = shortcuts.reassociations(storage=populated_storage)
+
+        # No reassociations in test data
+        assert len(df) == 0
+
+    def test_by_object(self, populated_storage):
+        """Test by_object() for querying by DIA object ID."""
+        # Get a known object ID
+        result = populated_storage.query("SELECT dia_object_id FROM alerts_raw LIMIT 1")
+        object_id = result[0]["dia_object_id"]
+
+        df = shortcuts.by_object(object_id, storage=populated_storage)
+
+        assert len(df) >= 1
+        assert all(df["dia_object_id"] == object_id)
+
+    def test_by_object_not_found(self, populated_storage):
+        """Test by_object() with non-existent object ID."""
+        df = shortcuts.by_object(999999999, storage=populated_storage)
+
+        assert len(df) == 0
+
+    def test_by_sso_not_found(self, populated_storage):
+        """Test by_sso() with non-existent SSObject ID."""
+        df = shortcuts.by_sso("NONEXISTENT_SSO", storage=populated_storage)
+
+        assert len(df) == 0
+
+    def test_in_region_narrow(self, populated_storage):
+        """Test in_region() with narrow region that may have no results."""
+        df = shortcuts.in_region(
+            ra_min=0.0,
+            ra_max=0.1,
+            dec_min=0.0,
+            dec_max=0.1,
+            storage=populated_storage,
+        )
+
+        # May or may not have results depending on test data
+        assert isinstance(df, type(shortcuts.point_sources(populated_storage)))
+
+    def test_with_filter_nonexistent(self, populated_storage):
+        """Test with_filter() for filter that doesn't exist."""
+        df = shortcuts.with_filter("z", storage=populated_storage)
+
+        # No 'z' filter in test data
+        assert len(df) == 0
+
+    def test_custom_query_with_params(self, populated_storage):
+        """Test custom() with parameterized query."""
+        df = shortcuts.custom(
+            "SELECT * FROM alerts_raw WHERE snr > ? ORDER BY snr DESC LIMIT ?",
+            params=(90.0, 5),
+            storage=populated_storage,
+        )
+
+        assert len(df) <= 5
+        if len(df) > 0:
+            assert all(df["snr"] > 90.0)

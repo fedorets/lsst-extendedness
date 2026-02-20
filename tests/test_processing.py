@@ -470,6 +470,31 @@ class TestExtendedRegistry:
         # Should not crash, but won't discover anything
         assert isinstance(result, list)
 
+    def test_discover_processors_valid_plugin(self, tmp_path):
+        """Test discovering valid processor plugin."""
+        plugin_code = """
+from lsst_extendedness.processing.base import BaseProcessor
+from lsst_extendedness.processing.registry import register_processor
+from lsst_extendedness.models.alerts import ProcessingResult
+
+@register_processor("discovered_plugin")
+class DiscoveredPlugin(BaseProcessor):
+    name = "discovered_plugin"
+    version = "1.0.0"
+
+    def process(self, df):
+        return ProcessingResult(
+            processor_name=self.name,
+            processor_version=self.version,
+            records=[],
+        )
+"""
+        (tmp_path / "plugin.py").write_text(plugin_code)
+        result = discover_processors(tmp_path)
+
+        assert "discovered_plugin" in result
+        assert is_processor_registered("discovered_plugin")
+
     def test_load_builtin_processors(self):
         """Test loading builtin processors."""
         result = load_builtin_processors()
@@ -477,6 +502,31 @@ class TestExtendedRegistry:
         assert isinstance(result, list)
         # Example processor should be registered
         assert is_processor_registered("example") or len(result) >= 0
+
+    def test_print_processors(self, capsys):
+        """Test printing processors to stdout."""
+        from lsst_extendedness.processing.registry import print_processors
+
+        @register_processor("print_test")
+        class PrintTestProc(BaseProcessor):
+            name = "print_test"
+            version = "1.0.0"
+            description = "Test processor for printing"
+
+            def process(self, df):
+                return ProcessingResult(
+                    processor_name=self.name,
+                    processor_version=self.version,
+                    records=[],
+                )
+
+        # Should not raise an exception
+        print_processors()
+
+        # Check that output was produced
+        captured = capsys.readouterr()
+        # Rich table output may vary, but should contain processor info
+        assert "print_test" in captured.out or len(captured.out) > 0
 
 
 # ============================================================================

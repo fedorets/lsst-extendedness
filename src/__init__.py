@@ -9,4 +9,4 @@ __author__ = "LSST Alert Pipeline"
 # Import main consumer class for easy access
 from .lsst_alert_consumer import LSSTAlertConsumer
 
-__all__ = ['LSSTAlertConsumer']
+__all__ = ["LSSTAlertConsumer"]

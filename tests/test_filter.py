@@ -240,28 +240,28 @@ class TestFilterConfig:
     def test_to_sql_with_order_by(self):
         """Test SQL generation with ORDER BY."""
         config = FilterConfig(order_by="mjd", order_desc=True)
-        sql, params = config.to_sql()
+        sql, _params = config.to_sql()
 
         assert "ORDER BY mjd DESC" in sql
 
     def test_to_sql_with_order_asc(self):
         """Test SQL generation with ORDER BY ASC."""
         config = FilterConfig(order_by="snr", order_desc=False)
-        sql, params = config.to_sql()
+        sql, _params = config.to_sql()
 
         assert "ORDER BY snr ASC" in sql
 
     def test_to_sql_with_limit(self):
         """Test SQL generation with LIMIT."""
         config = FilterConfig(limit=100)
-        sql, params = config.to_sql()
+        sql, _params = config.to_sql()
 
         assert "LIMIT 100" in sql
 
     def test_to_sql_custom_table(self):
         """Test SQL generation with custom table."""
         config = FilterConfig()
-        sql, params = config.to_sql(base_table="alerts_filtered")
+        sql, _params = config.to_sql(base_table="alerts_filtered")
 
         assert "FROM alerts_filtered" in sql
 

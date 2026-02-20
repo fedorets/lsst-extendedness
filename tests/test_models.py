@@ -338,3 +338,55 @@ class TestIngestionRun:
         assert isinstance(db_dict["source_config"], str)
         assert isinstance(db_dict["metadata"], str)
         assert "id" not in db_dict  # ID excluded
+
+    def test_from_db_row(self):
+        """Test creating IngestionRun from database row."""
+        from lsst_extendedness.models.runs import RunStatus
+
+        # Create original with various fields
+        original = IngestionRun(
+            source_name="kafka",
+            source_config={"topic": "alerts", "group_id": "test"},
+            metadata={"version": "1.0.0", "host": "server1"},
+        )
+        original.id = 42
+        original.alerts_ingested = 1000
+        original.alerts_failed = 5
+        original.new_sources = 500
+        original.reassociations_detected = 10
+        original.cutouts_saved = 100
+        original.complete()
+
+        # Convert to DB dict and back
+        db_dict = original.to_db_dict()
+        db_dict["id"] = 42  # ID would come from DB
+
+        restored = IngestionRun.from_db_row(db_dict)
+
+        assert restored.id == 42
+        assert restored.source_name == "kafka"
+        assert restored.source_config == {"topic": "alerts", "group_id": "test"}
+        assert restored.metadata == {"version": "1.0.0", "host": "server1"}
+        assert restored.alerts_ingested == 1000
+        assert restored.alerts_failed == 5
+        assert restored.status == RunStatus.COMPLETED
+
+    def test_from_db_row_with_dict_already_parsed(self):
+        """Test from_db_row when JSON fields are already dicts."""
+        db_dict = {
+            "id": 1,
+            "source_name": "file",
+            "source_config": {"path": "/data"},  # Already a dict
+            "metadata": {"key": "value"},  # Already a dict
+            "status": "running",
+            "alerts_ingested": 50,
+            "alerts_failed": 0,
+            "new_sources": 25,
+            "reassociations_detected": 0,
+            "cutouts_saved": 0,
+        }
+
+        restored = IngestionRun.from_db_row(db_dict)
+
+        assert restored.source_config == {"path": "/data"}
+        assert restored.metadata == {"key": "value"}

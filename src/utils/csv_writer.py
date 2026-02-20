@@ -21,7 +21,7 @@ class CSVWriter:
     def __init__(self, output_dir, batch_size=100):
         """
         Initialize CSV writer.
-        
+
         Parameters:
         -----------
         output_dir : str or Path
@@ -39,12 +39,12 @@ class CSVWriter:
     def add_record(self, record):
         """
         Add a record to the buffer.
-        
+
         Parameters:
         -----------
         record : dict
             Alert record to add
-            
+
         Returns:
         --------
         bool
@@ -61,12 +61,12 @@ class CSVWriter:
     def flush(self, filepath=None):
         """
         Write buffered records to CSV file.
-        
+
         Parameters:
         -----------
         filepath : str or Path, optional
             Output file path (default: auto-generated)
-            
+
         Returns:
         --------
         int
@@ -88,7 +88,7 @@ class CSVWriter:
             # Write to CSV
             if filepath.exists():
                 # Append without header
-                df.to_csv(filepath, mode='a', header=False, index=False)
+                df.to_csv(filepath, mode="a", header=False, index=False)
             else:
                 # Create new file with header
                 df.to_csv(filepath, index=False)
@@ -108,8 +108,8 @@ class CSVWriter:
 
     def _get_default_filepath(self):
         """Generate default filepath based on current date."""
-        today = datetime.now().strftime('%Y%m%d')
-        return self.output_dir / f'lsst_alerts_{today}.csv'
+        today = datetime.now().strftime("%Y%m%d")
+        return self.output_dir / f"lsst_alerts_{today}.csv"
 
     def get_buffer_size(self):
         """Return number of records in buffer."""
@@ -132,7 +132,7 @@ class DynamicCSVWriter:
     def __init__(self, output_dir):
         """
         Initialize dynamic CSV writer.
-        
+
         Parameters:
         -----------
         output_dir : str or Path
@@ -148,7 +148,7 @@ class DynamicCSVWriter:
     def add_record(self, record):
         """
         Add a record and track its columns.
-        
+
         Parameters:
         -----------
         record : dict
@@ -161,7 +161,7 @@ class DynamicCSVWriter:
     def flush(self, filepath):
         """
         Write all records with unified column set.
-        
+
         Parameters:
         -----------
         filepath : str or Path
@@ -211,7 +211,7 @@ class DynamicCSVWriter:
                     combined_df[all_cols].to_csv(filepath, index=False)
                 else:
                     # Columns match, safe to append
-                    df.to_csv(filepath, mode='a', header=False, index=False)
+                    df.to_csv(filepath, mode="a", header=False, index=False)
             else:
                 # New file
                 df.to_csv(filepath, index=False)
@@ -236,7 +236,7 @@ class DynamicCSVWriter:
 def write_csv_with_metadata(records, filepath, metadata=None):
     """
     Write CSV with optional metadata header.
-    
+
     Parameters:
     -----------
     records : list of dict
@@ -245,7 +245,7 @@ def write_csv_with_metadata(records, filepath, metadata=None):
         Output file path
     metadata : dict, optional
         Metadata to write as comments at top of file
-        
+
     Returns:
     --------
     int
@@ -259,7 +259,7 @@ def write_csv_with_metadata(records, filepath, metadata=None):
         df = pd.DataFrame(records)
 
         # Write metadata as comments
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             if metadata:
                 f.write("# LSST Alert Data\n")
                 for key, value in metadata.items():
@@ -280,7 +280,7 @@ def write_csv_with_metadata(records, filepath, metadata=None):
 def append_to_csv(records, filepath, create_if_missing=True):
     """
     Append records to existing CSV file.
-    
+
     Parameters:
     -----------
     records : list of dict
@@ -289,7 +289,7 @@ def append_to_csv(records, filepath, create_if_missing=True):
         CSV file path
     create_if_missing : bool
         Create file if it doesn't exist
-        
+
     Returns:
     --------
     int
@@ -310,7 +310,7 @@ def append_to_csv(records, filepath, create_if_missing=True):
 
     try:
         df = pd.DataFrame(records)
-        df.to_csv(filepath, mode='a', header=False, index=False)
+        df.to_csv(filepath, mode="a", header=False, index=False)
 
         logger.debug(f"Appended {len(records)} records to {filepath}")
         return len(records)
@@ -320,11 +320,12 @@ def append_to_csv(records, filepath, create_if_missing=True):
         return 0
 
 
-def merge_csv_files(input_files, output_file, remove_duplicates=False,
-                    sort_by=None, dedupe_column=None):
+def merge_csv_files(
+    input_files, output_file, remove_duplicates=False, sort_by=None, dedupe_column=None
+):
     """
     Merge multiple CSV files into one.
-    
+
     Parameters:
     -----------
     input_files : list of str/Path
@@ -337,7 +338,7 @@ def merge_csv_files(input_files, output_file, remove_duplicates=False,
         Column(s) to sort by
     dedupe_column : str, optional
         Column to use for deduplication (keeps first occurrence)
-        
+
     Returns:
     --------
     int
@@ -363,7 +364,7 @@ def merge_csv_files(input_files, output_file, remove_duplicates=False,
         # Deduplicate by specific column
         if dedupe_column and dedupe_column in merged_df.columns:
             before = len(merged_df)
-            merged_df = merged_df.drop_duplicates(subset=[dedupe_column], keep='first')
+            merged_df = merged_df.drop_duplicates(subset=[dedupe_column], keep="first")
             after = len(merged_df)
             logger.info(f"Removed {before - after} duplicates based on {dedupe_column}")
 
@@ -391,10 +392,10 @@ def merge_csv_files(input_files, output_file, remove_duplicates=False,
         return 0
 
 
-def split_csv_by_column(input_file, output_dir, split_column, prefix='split'):
+def split_csv_by_column(input_file, output_dir, split_column, prefix="split"):
     """
     Split CSV file into multiple files based on column value.
-    
+
     Parameters:
     -----------
     input_file : str or Path
@@ -405,7 +406,7 @@ def split_csv_by_column(input_file, output_dir, split_column, prefix='split'):
         Column to split by
     prefix : str
         Prefix for output files
-        
+
     Returns:
     --------
     dict
@@ -426,7 +427,7 @@ def split_csv_by_column(input_file, output_dir, split_column, prefix='split'):
         # Group by split column
         for value, group_df in df.groupby(split_column):
             # Create output filename
-            safe_value = str(value).replace('/', '_').replace(' ', '_')
+            safe_value = str(value).replace("/", "_").replace(" ", "_")
             output_file = output_dir / f"{prefix}_{safe_value}.csv"
 
             # Write group
@@ -445,12 +446,12 @@ def split_csv_by_column(input_file, output_dir, split_column, prefix='split'):
 def csv_stats(csv_file):
     """
     Get statistics about a CSV file.
-    
+
     Parameters:
     -----------
     csv_file : str or Path
         CSV file to analyze
-        
+
     Returns:
     --------
     dict
@@ -460,44 +461,44 @@ def csv_stats(csv_file):
         df = pd.read_csv(csv_file)
 
         stats = {
-            'filepath': str(csv_file),
-            'rows': len(df),
-            'columns': len(df.columns),
-            'column_names': list(df.columns),
-            'file_size_kb': Path(csv_file).stat().st_size / 1024,
-            'memory_usage_mb': df.memory_usage(deep=True).sum() / (1024 * 1024),
+            "filepath": str(csv_file),
+            "rows": len(df),
+            "columns": len(df.columns),
+            "column_names": list(df.columns),
+            "file_size_kb": Path(csv_file).stat().st_size / 1024,
+            "memory_usage_mb": df.memory_usage(deep=True).sum() / (1024 * 1024),
         }
 
         # Identify dynamic columns
-        trail_cols = [col for col in df.columns if col.startswith('trail')]
-        pixel_cols = [col for col in df.columns if col.startswith('pixelFlags')]
+        trail_cols = [col for col in df.columns if col.startswith("trail")]
+        pixel_cols = [col for col in df.columns if col.startswith("pixelFlags")]
 
         if trail_cols:
-            stats['trail_columns'] = trail_cols
+            stats["trail_columns"] = trail_cols
         if pixel_cols:
-            stats['pixel_flag_columns'] = pixel_cols
+            stats["pixel_flag_columns"] = pixel_cols
 
         # Check for reassociations
-        if 'isReassociation' in df.columns:
-            stats['reassociations'] = int(df['isReassociation'].sum())
-            stats['reassociation_rate'] = float(df['isReassociation'].mean())
+        if "isReassociation" in df.columns:
+            stats["reassociations"] = int(df["isReassociation"].sum())
+            stats["reassociation_rate"] = float(df["isReassociation"].mean())
 
         # Check for SSObjects
-        if 'hasSSSource' in df.columns:
-            stats['with_ssobject'] = int(df['hasSSSource'].sum())
-            stats['ssobject_rate'] = float(df['hasSSSource'].mean())
+        if "hasSSSource" in df.columns:
+            stats["with_ssobject"] = int(df["hasSSSource"].sum())
+            stats["ssobject_rate"] = float(df["hasSSSource"].mean())
 
         return stats
 
     except Exception as e:
         logger.error(f"Error getting CSV stats: {e}")
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
-def convert_csv_to_json(csv_file, json_file, orient='records', indent=2):
+def convert_csv_to_json(csv_file, json_file, orient="records", indent=2):
     """
     Convert CSV to JSON format.
-    
+
     Parameters:
     -----------
     csv_file : str or Path
@@ -508,7 +509,7 @@ def convert_csv_to_json(csv_file, json_file, orient='records', indent=2):
         JSON orientation ('records', 'index', 'columns', etc.)
     indent : int
         JSON indentation
-        
+
     Returns:
     --------
     int
@@ -533,7 +534,7 @@ def convert_csv_to_json(csv_file, json_file, orient='records', indent=2):
 def filter_csv(input_file, output_file, filter_func):
     """
     Filter CSV file based on custom function.
-    
+
     Parameters:
     -----------
     input_file : str or Path
@@ -542,7 +543,7 @@ def filter_csv(input_file, output_file, filter_func):
         Output CSV file
     filter_func : callable
         Function that takes a row (dict) and returns True/False
-        
+
     Returns:
     --------
     int

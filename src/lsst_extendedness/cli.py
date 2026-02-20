@@ -228,18 +228,18 @@ def ingest(
             kafka_config = settings.kafka.to_consumer_config()
             kafka_topic = topic or settings.kafka.topic
 
-            consumer = LSSTAlertConsumer(
+            consumer = LSSTAlertConsumer(  # type: ignore[no-untyped-call]
                 kafka_config=kafka_config,
-                topic=kafka_topic,
-                data_dir=settings.data_dir,
+                base_dir=str(settings.data_dir),
             )
 
             console.print(f"Topic: [cyan]{kafka_topic}[/cyan]")
             console.print("Starting legacy consumer (Ctrl+C to stop)...")
 
-            consumer.consume_alerts(
+            consumer.consume_alerts(  # type: ignore[no-untyped-call]
+                topic=kafka_topic,
                 max_messages=max_messages,
-                max_duration_seconds=duration,
+                duration_seconds=duration,
             )
 
             console.print("[green]Legacy ingestion complete[/green]")
@@ -432,16 +432,16 @@ def backfill(
                 storage.write_batch(batch)
 
         run.complete()
-        storage.update_ingestion_run(run)
+        storage.write_ingestion_run(run)
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted[/yellow]")
         run.fail("User interrupted")
-        storage.update_ingestion_run(run)
+        storage.write_ingestion_run(run)
     except Exception as e:
         console.print(f"\n[red]Error:[/red] {e}")
         run.fail(str(e))
-        storage.update_ingestion_run(run)
+        storage.write_ingestion_run(run)
     finally:
         source.close()
         storage.close()

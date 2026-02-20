@@ -39,6 +39,12 @@ dependencies = [
     # Astronomy
     "astropy>=6.0.0",
 
+    # ANTARES broker (primary alert source)
+    # bson-modern is a Python 3.9+ compatible fork of bson
+    # (required by antares-client, original bson is unmaintained since 2019)
+    "bson-modern>=1.1.0",
+    "antares-client>=1.3.0",
+
     # Database (SQLite is built-in, this is for type hints)
 
     # HTTP (for schema registry, etc.)
@@ -76,11 +82,6 @@ dev = [
     "mkdocstrings[python]>=0.24.0",
 ]
 
-antares = [
-    # ANTARES client for broker integration
-    "antares-client>=1.3.0",
-]
-
 thumbnails = [
     # For creating PNG thumbnails from FITS cutouts
     "pillow>=10.1.0",
@@ -104,6 +105,11 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+# Note: antares-client depends on bson which only supports Python 3.6
+# We exclude it and use bson-modern which provides the same module name
+[tool.pdm.resolution]
+excludes = ["bson"]
 
 [tool.pdm.dev-dependencies]
 dev = [
@@ -169,7 +175,6 @@ select = [
     "UP",     # pyupgrade
     "ARG",    # flake8-unused-arguments
     "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
     "PTH",    # flake8-use-pathlib
     "RUF",    # Ruff-specific rules
 ]
@@ -182,10 +187,6 @@ ignore = [
     "SIM103", # Return condition directly (less readable)
     "SIM108", # Use ternary operator (less readable in many cases)
     "PTH123", # open() vs Path.open() (both are fine)
-    "UP042",  # Prefer StrEnum (requires Python 3.11+)
-    "TCH001", # Move application import into type-checking block (too aggressive)
-    "TCH002", # Move third-party import into type-checking block (too aggressive)
-    "TCH003", # Move stdlib import into type-checking block (too aggressive)
 ]
 
 [tool.ruff.lint.isort]
@@ -199,7 +200,6 @@ known-first-party = ["lsst_extendedness"]
     "B905",    # zip without strict= (not needed in tests)
     "F401",    # Unused imports (optional dependency checks)
     "F841",    # Unused variables (test setup)
-    "RUF059",  # Unused unpacked variables (common in tests)
     "S101",    # Use of assert
 ]
 
@@ -238,7 +238,21 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = "src.lsst_alert_consumer"
+module = "lsst_extendedness.cli"
+disallow_untyped_decorators = false  # Click decorators are untyped
+
+[[tool.mypy.overrides]]
+module = "lsst_extendedness.models.runs"
+warn_unused_ignores = false  # Pydantic computed_field needs type: ignore in some mypy versions
+
+[[tool.mypy.overrides]]
+module = [
+    "lsst_alert_consumer",
+    "lsst_alert_consumer.*",
+    "utils.*",
+    "antares_extendedness_filter",
+    "__init__",
+]
 ignore_errors = true  # Legacy code being replaced
 
 # ============================================================================

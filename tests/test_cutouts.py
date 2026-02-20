@@ -424,7 +424,121 @@ class TestLoadCutoutAsArray:
     """Tests for load_cutout_as_array function."""
 
     def test_load_requires_astropy(self, tmp_path):
-        """Test that astropy is required."""
-        # This test just verifies the import error handling exists
-        # We can't really test without astropy installed
-        pass  # The function handles ImportError gracefully
+        """Test that astropy import error is raised properly."""
+        import builtins
+        import sys
+
+        from lsst_extendedness.cutouts import processor
+
+        # Force reload of module with astropy mocked out
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "astropy.io" or name.startswith("astropy"):
+                raise ImportError("No module named 'astropy'")
+            return original_import(name, *args, **kwargs)
+
+        # Create a dummy file
+        test_file = tmp_path / "test.fits"
+        test_file.write_bytes(b"SIMPLE  =                    T")
+
+        try:
+            builtins.__import__ = mock_import
+            # Clear cached import
+            if "astropy.io.fits" in sys.modules:
+                del sys.modules["astropy.io.fits"]
+            if "astropy.io" in sys.modules:
+                del sys.modules["astropy.io"]
+            if "astropy" in sys.modules:
+                del sys.modules["astropy"]
+
+            with pytest.raises(ImportError, match="astropy required"):
+                processor.load_cutout_as_array(test_file)
+        finally:
+            builtins.__import__ = original_import
+
+    def test_load_regular_fits(self, tmp_path):
+        """Test loading regular FITS file as array."""
+        pytest.importorskip("astropy")
+        import numpy as np
+
+        # Create a minimal valid FITS file with image data
+        from astropy.io import fits
+
+        from lsst_extendedness.cutouts.processor import load_cutout_as_array
+
+        # Create simple image data
+        data = np.zeros((10, 10), dtype=np.float32)
+        data[5, 5] = 1.0
+
+        test_file = tmp_path / "test.fits"
+        hdu = fits.PrimaryHDU(data)
+        hdu.writeto(test_file)
+
+        # Load and verify
+        result = load_cutout_as_array(test_file)
+
+        assert result.shape == (10, 10)
+        assert result[5, 5] == 1.0
+
+    def test_load_gzipped_fits(self, tmp_path):
+        """Test loading gzipped FITS file as array."""
+        pytest.importorskip("astropy")
+        import gzip
+        import io
+
+        import numpy as np
+        from astropy.io import fits
+
+        from lsst_extendedness.cutouts.processor import load_cutout_as_array
+
+        # Create simple image data
+        data = np.ones((8, 8), dtype=np.float32) * 42.0
+
+        # Write to bytes
+        buffer = io.BytesIO()
+        hdu = fits.PrimaryHDU(data)
+        hdu.writeto(buffer)
+        buffer.seek(0)
+
+        # Gzip it
+        test_file = tmp_path / "test.fits.gz"
+        with gzip.open(test_file, "wb") as f:
+            f.write(buffer.read())
+
+        # Load and verify
+        result = load_cutout_as_array(test_file)
+
+        assert result.shape == (8, 8)
+        assert result[0, 0] == pytest.approx(42.0)
+
+
+class TestCutoutExtractionErrors:
+    """Tests for error handling in cutout extraction."""
+
+    def test_extract_cutout_write_error(self, cutout_config, valid_fits_data, tmp_path):
+        """Test extraction failure when write fails."""
+        from unittest.mock import MagicMock, patch
+
+        processor = CutoutProcessor(cutout_config)
+
+        # Create a path that will fail on write
+        output_path = tmp_path / "test.fits"
+
+        # Mock write_bytes to raise an exception
+        with patch.object(Path, "write_bytes", side_effect=PermissionError("Permission denied")):
+            result = processor._extract_cutout(valid_fits_data, output_path)
+
+        # Should return False due to exception
+        assert result is False
+
+    def test_extract_cutout_decompression_error(self, cutout_processor, tmp_path):
+        """Test extraction with corrupted gzip data."""
+        output_path = tmp_path / "test.fits"
+        # Looks like gzip (magic bytes) but is corrupted
+        corrupted_gzip = b"\x1f\x8b\x08\x00" + b"corrupted data here"
+
+        result = cutout_processor._extract_cutout(corrupted_gzip, output_path)
+
+        # Should return False due to decompression error
+        assert result is False

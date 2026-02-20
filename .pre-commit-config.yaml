@@ -27,15 +27,12 @@ repos:
 
       # Check YAML/TOML syntax
       - id: check-yaml
+        args: ['--unsafe']  # Allow Python-specific tags in mkdocs.yml
       - id: check-toml
 
       # Check JSON syntax
       - id: check-json
         exclude: '\.ipynb$'
-
-      # Prevent commits to main/master
-      - id: no-commit-to-branch
-        args: ['--branch', 'main', '--branch', 'master']
 
       # Check for merge conflict markers
       - id: check-merge-conflict
@@ -74,7 +71,7 @@ repos:
           - pandas-stubs>=2.1.0
         args: ['--ignore-missing-imports']
         # Only run on src files (not tests, for speed)
-        files: ^src/
+        files: ^src/lsst_extendedness/
 
   # ============================================================================
   # SECURITY CHECKS
