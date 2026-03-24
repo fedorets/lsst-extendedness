@@ -34,6 +34,7 @@ pdm run lsst-extendedness ingest --source mock --count 100
 - [**Filtering**](guide/filtering.md) - Filter presets and custom SQL filters
 - [**Post-Processing**](guide/processing.md) - Run analysis, create custom processors
 - [**Querying**](guide/querying.md) - Query data and export results
+- [**Pumalink Export**](guide/pumalink_export.md) - Export detections to Pumalink TRD9 format
 
 ### API Reference
 

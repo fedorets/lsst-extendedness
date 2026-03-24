@@ -73,6 +73,7 @@ nav:
       - Filtering Alerts: guide/filtering.md
       - Post-Processing: guide/processing.md
       - Querying Data: guide/querying.md
+      - Pumalink Export: guide/pumalink_export.md
   - API Reference:
       - Models: api/models.md
       - Sources: api/sources.md
