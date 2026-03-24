@@ -55,6 +55,9 @@ dmypy.json
 # Linting
 .ruff_cache/
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # IDE
 .idea/
 .vscode/
