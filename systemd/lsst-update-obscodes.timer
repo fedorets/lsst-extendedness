@@ -1,0 +1,13 @@
+[Unit]
+Description=LSST Extendedness Pipeline - Daily MPC ObsCodes Update
+Documentation=https://github.com/westover/lsst-extendedness
+
+[Timer]
+# Run daily at 01:00, one hour before ingestion (lsst-ingest.timer runs at 02:00)
+OnCalendar=*-*-* 01:00:00
+Persistent=true
+RandomizedDelaySec=300
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

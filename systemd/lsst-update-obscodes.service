@@ -1,0 +1,24 @@
+[Unit]
+Description=LSST Extendedness Pipeline - Update MPC ObsCodes
+Documentation=https://github.com/westover/lsst-extendedness
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/lsst-extendedness
+ExecStart=/bin/bash %h/lsst-extendedness/scripts/update_obscodes.sh
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lsst-update-obscodes
+
+# Timeout (download should be fast)
+TimeoutStartSec=120
+
+# Environment
+Environment=HOME=%h
+
+[Install]
+WantedBy=default.target

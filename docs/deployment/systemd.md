@@ -11,11 +11,46 @@ make timer-install
 # Or manually
 sudo cp systemd/*.service systemd/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
+sudo systemctl enable --now lsst-update-obscodes.timer
 sudo systemctl enable --now lsst-ingest.timer
 sudo systemctl enable --now lsst-process.timer
 ```
 
 ## Service Units
+
+### lsst-update-obscodes.service
+
+Downloads the MPC observatory codes file (`data/ObsCodes.dat`) and replaces
+it only if the content has changed (SHA-256 comparison). Runs daily at 01:00,
+one hour before ingestion, so the Pumalink export always uses current data.
+
+```ini
+[Unit]
+Description=LSST Extendedness Pipeline - Update MPC ObsCodes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/lsst-extendedness
+ExecStart=/bin/bash %h/lsst-extendedness/scripts/update_obscodes.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lsst-update-obscodes
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target
+```
+
+Timer: runs daily at 01:00 (`lsst-update-obscodes.timer`).
+
+Logs: `logs/obscodes/obscodes_YYYYMMDD.log`
+
+Also called by `bin/run_lsst_consumer.sh` at the start of each cron run,
+so the file stays current regardless of which scheduling method is used.
+
+---
 
 ### lsst-ingest.service
 

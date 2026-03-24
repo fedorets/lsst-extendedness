@@ -55,6 +55,16 @@ fi
 # Write current PID
 echo $$ > "$PIDFILE"
 
+# Update MPC ObsCodes file before running the consumer
+log "--------------------------------------"
+log "Updating MPC ObsCodes file..."
+if bash "$BASE_DIR/scripts/update_obscodes.sh"; then
+    log "ObsCodes update completed."
+else
+    log "WARNING: ObsCodes update failed (exit $?) — continuing with existing file"
+fi
+log "--------------------------------------"
+
 # Run the consumer
 log "Starting consumer..."
 START_TIME=$(date +%s)
