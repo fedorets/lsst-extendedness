@@ -1,5 +1,5 @@
 """
-ANTARES Level 2 Filter for LSST Alerts
+ANTARES Level 2 Filter for LSST Alerts (boolean return variant)
 Filters based on DIASource extendedness values and SSSource presence
 
 NOTE: This filter only determines which alerts PASS through to the output Kafka topic.
@@ -11,13 +11,15 @@ The downstream consumer (lsst_alert_consumer.py) is responsible for extracting
 these fields from the alert packets and storing them in CSV files.
 
 --- IMPLEMENTATION NOTE: run() return convention ---
-This version implements run() -> None, signalling a pass by calling locus.tag().
-This follows the class-based ANTARES DevKit API as documented online, where filters
-enrich passing loci with tags rather than returning a boolean.
+This version implements run() -> bool, returning True for passing alerts and False
+otherwise. This follows the function-based ANTARES filter API convention, and is
+consistent with all existing examples in this repository.
 
-An alternative version using run() -> bool (the function-based API convention) is
-preserved in antares_extendedness_filter_bool.py. If the ANTARES team confirms that
-the class-based API accepts a boolean return, swap to that version instead.
+The primary version (antares_extendedness_filter_.py) instead uses run() -> None and
+calls locus.tag(), following the class-based ANTARES DevKit API as documented online.
+
+Use this file if the ANTARES team confirms that the class-based API accepts a boolean
+return rather than locus.tag().
 """
 
 from __future__ import annotations
@@ -77,20 +79,22 @@ class ExtendednessFilter:
 
     SLACK_CHANNEL = "#lsst-extendedness"
 
-    def run(self, locus) -> None:
+    def run(self, locus) -> bool:
         """
         Main filter entry point called by ANTARES for each locus.
-
-        Passing alerts are signalled by tagging the locus with the output tag
-        defined in OUTPUT_TAGS. Non-passing alerts are left untagged.
 
         Parameters
         ----------
         locus : antares.devkit.locus.Locus
             ANTARES locus object containing alert information
+
+        Returns
+        -------
+        bool
+            True if the alert passes the filter, False otherwise.
         """
         if not locus.alerts:
-            return
+            return False
 
         latest_alert = locus.alerts[-1]
 
@@ -103,11 +107,10 @@ class ExtendednessFilter:
             else:
                 passes_sssource = not has_sssource
 
-            if passes_extendedness and passes_sssource:
-                locus.tag("extendedness_sso_candidate")
+            return passes_extendedness and passes_sssource
 
         except (AttributeError, KeyError):
-            return
+            return False
 
     def _check_extendedness(self, alert):
         """
