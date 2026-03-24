@@ -1,199 +1,290 @@
+[build-system]
+build-backend = "pdm.backend"
+requires = ["pdm-backend"]
+
 [project]
-name = "lsst-extendedness"
-version = "2.0.0"
-description = "LSST Alert Pipeline for Extendedness Analysis with SQLite storage"
 authors = [
-    {name = "James Westover", email = "james@westover.xyz"}
+  {name = "James Westover", email = "james@westover.xyz"}
 ]
-readme = "README.md"
-license = {text = "MIT"}
-requires-python = ">=3.12"
-keywords = ["lsst", "astronomy", "kafka", "alerts", "pipeline"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Scientific/Engineering :: Astronomy",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Astronomy"
 ]
-
 dependencies = [
-    # Core
-    "pydantic>=2.5.0",
-    "click>=8.1.0",
-    "rich>=13.0.0",
-    # tomllib is built-in for Python 3.11+
-
-    # Kafka & Serialization
-    "confluent-kafka>=2.3.0",
-    "fastavro>=1.9.0",
-
-    # Data Processing
-    "pandas>=2.1.0",
-    "numpy>=1.26.0",
-    "pyarrow>=14.0.0",
-    "openpyxl>=3.1.0",
-
-    # Astronomy
-    "astropy>=6.0.0",
-
-    # ANTARES broker (primary alert source)
-    # bson-modern is a Python 3.9+ compatible fork of bson
-    # (required by antares-client, original bson is unmaintained since 2019)
-    "bson-modern>=1.1.0",
-    "antares-client>=1.3.0",
-
-    # Database (SQLite is built-in, this is for type hints)
-
-    # HTTP (for schema registry, etc.)
-    # Pin httpx<0.28 for compatibility with lsst-rsp
-    "requests>=2.28.0",
-    "httpx>=0.25.0,<0.28",
-
-    # Logging
-    "structlog>=23.2.0",
+  # Core
+  "pydantic>=2.5.0",
+  "click>=8.1.0",
+  "rich>=13.0.0",
+  # Kafka & Serialization
+  "confluent-kafka>=2.3.0",
+  "fastavro>=1.9.0",
+  # Data Processing
+  "pandas>=2.1.0",
+  "numpy>=1.26.0",
+  "pyarrow>=14.0.0",
+  "openpyxl>=3.1.0",
+  # Astronomy
+  "astropy>=6.0.0",
+  # ANTARES broker (primary alert source)
+  # bson-modern is a Python 3.9+ compatible fork of bson
+  # (required by antares-client, original bson is unmaintained since 2019)
+  "bson-modern>=1.1.0",
+  "antares-client>=1.3.0",
+  # HTTP (for schema registry, etc.)
+  # Pin httpx<0.28 for compatibility with lsst-rsp
+  "requests>=2.28.0",
+  "httpx>=0.25.0,<0.28",
+  # Logging
+  "structlog>=23.2.0"
 ]
+description = "LSST Alert Pipeline for Extendedness Analysis with SQLite storage"
+keywords = ["lsst", "astronomy", "kafka", "alerts", "pipeline"]
+license = {text = "MIT"}
+name = "lsst-extendedness"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "2.0.0"
 
 [project.optional-dependencies]
 dev = [
-    # Testing
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-mock>=3.12.0",
-    "hypothesis>=6.92.0",
-    "coverage[toml]>=7.3.0",
-
-    # Linting & Formatting
-    "ruff>=0.1.8",
-    "mypy>=1.7.0",
-
-    # Type stubs
-    "pandas-stubs>=2.1.0",
-    "types-requests>=2.31.0",
-
-    # Pre-commit
-    "pre-commit>=3.6.0",
-
-    # Documentation
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
+  # Testing
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "pytest-asyncio>=0.21.0",
+  "pytest-mock>=3.12.0",
+  "hypothesis>=6.92.0",
+  "coverage[toml]>=7.3.0",
+  # Linting & Formatting
+  "ruff>=0.1.8",
+  "mypy>=1.7.0",
+  # Type stubs
+  "pandas-stubs>=2.1.0",
+  "types-requests>=2.31.0",
+  # Pre-commit
+  "pre-commit>=3.6.0",
+  # Documentation
+  "mkdocs>=1.5.0",
+  "mkdocs-material>=9.5.0",
+  "mkdocstrings[python]>=0.24.0"
 ]
-
-thumbnails = [
-    # For creating PNG thumbnails from FITS cutouts
-    "pillow>=10.1.0",
-]
-
 spacerocks = [
-    # For known asteroid orbit data from JPL Horizons
-    # Note: Requires Python <3.14 due to pydantic-core dependency
-    "space-rocks>=1.9.0",
+  # For known asteroid orbit data from JPL Horizons
+  # Note: Requires Python <3.14 due to pydantic-core dependency
+  "space-rocks>=1.9.0"
 ]
-
-[project.urls]
-Homepage = "https://github.com/westover/lsst-extendedness"
-Documentation = "https://github.com/westover/lsst-extendedness#readme"
-Repository = "https://github.com/westover/lsst-extendedness"
-Issues = "https://github.com/westover/lsst-extendedness/issues"
+thumbnails = [
+  # For creating PNG thumbnails from FITS cutouts
+  "pillow>=10.1.0"
+]
 
 [project.scripts]
 lsst-extendedness = "lsst_extendedness.cli:main"
 lsst-ingest = "lsst_extendedness.cli:ingest"
-lsst-query = "lsst_extendedness.cli:query"
 lsst-process = "lsst_extendedness.cli:process"
+lsst-query = "lsst_extendedness.cli:query"
 
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+[project.urls]
+Documentation = "https://github.com/westover/lsst-extendedness#readme"
+Homepage = "https://github.com/westover/lsst-extendedness"
+Issues = "https://github.com/westover/lsst-extendedness/issues"
+Repository = "https://github.com/westover/lsst-extendedness"
+[tool.coverage]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod"
+]
+fail_under = 85
+show_missing = true
+skip_empty = true
+
+# ============================================================================
+# COVERAGE CONFIGURATION
+# ============================================================================
+[tool.coverage.run]
+branch = true
+omit = [
+  "*/cli.py",  # CLI tested via integration
+  "*/__main__.py"
+]
+parallel = true
+source = ["src/lsst_extendedness"]
+
+# ============================================================================
+# MYPY CONFIGURATION
+# ============================================================================
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+mypy_path = "src"
+no_implicit_optional = true
+python_version = "3.12"
+show_column_numbers = true
+show_error_codes = true
+strict = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+  "confluent_kafka.*",
+  "fastavro.*",
+  "astropy.*",
+  "antares_client.*",
+  "spacerocks.*"
+]
+
+[[tool.mypy.overrides]]
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+module = "tests.*"
+
+[[tool.mypy.overrides]]
+disallow_untyped_decorators = false  # Click decorators are untyped
+module = "lsst_extendedness.cli"
+
+[[tool.mypy.overrides]]
+module = "lsst_extendedness.models.runs"
+warn_unused_ignores = false  # Pydantic computed_field needs type: ignore in some mypy versions
+
+[[tool.mypy.overrides]]
+ignore_errors = true  # Legacy code being replaced
+module = [
+  "lsst_alert_consumer",
+  "lsst_alert_consumer.*",
+  "utils.*",
+  "antares_extendedness_filter",
+  "__init__"
+]
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "pytest-asyncio>=0.21.0",
+  "pytest-mock>=3.12.0",
+  "hypothesis>=6.92.0",
+  "coverage[toml]>=7.3.0",
+  "ruff>=0.1.8",
+  "mypy>=1.7.0",
+  "pandas-stubs>=2.1.0",
+  "types-requests>=2.31.0",
+  "pre-commit>=3.6.0"
+]
 
 # Note: antares-client depends on bson which only supports Python 3.6
 # We exclude it and use bson-modern which provides the same module name
 [tool.pdm.resolution]
 excludes = ["bson"]
 
-[tool.pdm.dev-dependencies]
-dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-mock>=3.12.0",
-    "hypothesis>=6.92.0",
-    "coverage[toml]>=7.3.0",
-    "ruff>=0.1.8",
-    "mypy>=1.7.0",
-    "pandas-stubs>=2.1.0",
-    "types-requests>=2.31.0",
-    "pre-commit>=3.6.0",
-]
-
 [tool.pdm.scripts]
-# Testing
-test = "pytest tests/ -v"
-test-cov = "pytest tests/ -v --cov=lsst_extendedness --cov-report=term-missing --cov-report=html"
-coverage = "coverage report --show-missing"
-coverage-html = "coverage html && open htmlcov/index.html"
-
-# Linting & Formatting
-lint = "ruff check src/ tests/"
-lint-fix = "ruff check src/ tests/ --fix"
-format = "ruff format src/ tests/"
-format-check = "ruff format src/ tests/ --check"
-typecheck = "mypy src/"
-
 # All checks
 check = {composite = ["lint", "format-check", "typecheck", "test"]}
-
+coverage = "coverage report --show-missing"
+coverage-html = "coverage html && open htmlcov/index.html"
 # Database
 db-init = "python -m lsst_extendedness.cli db-init"
 db-shell = "python -m lsst_extendedness.cli db-shell"
 db-stats = "python -m lsst_extendedness.cli db-stats"
-
+format = "ruff format src/ tests/"
+format-check = "ruff format src/ tests/ --check"
 # Operations
 ingest = "python -m lsst_extendedness.cli ingest"
-query = "python -m lsst_extendedness.cli query"
+# Linting & Formatting
+lint = "ruff check src/ tests/"
+lint-fix = "ruff check src/ tests/ --fix"
 process = "python -m lsst_extendedness.cli process"
-
+query = "python -m lsst_extendedness.cli query"
 # Development
 shell = "python -c \"from lsst_extendedness import *; import code; code.interact(local=locals())\""
+# Testing
+test = "pytest tests/ -v"
+test-cov = "pytest tests/ -v --cov=lsst_extendedness --cov-report=term-missing --cov-report=html"
+typecheck = "mypy src/"
+
+# ============================================================================
+# PYTEST CONFIGURATION
+# ============================================================================
+[tool.pytest]
+[tool.pytest.ini_options]
+addopts = [
+  "-ra",
+  "-q",
+  "--strict-markers",
+  "--strict-config"
+]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+  "ignore::PendingDeprecationWarning"
+]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests",
+  "unit: marks tests as unit tests"
+]
+python_classes = ["Test*"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+testpaths = ["tests"]
 
 # ============================================================================
 # RUFF CONFIGURATION
 # ============================================================================
 [tool.ruff]
-target-version = "py312"
 line-length = 100
 src = ["src", "tests"]
+target-version = "py312"
 
 [tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # Pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
-    "SIM",    # flake8-simplify
-    "PTH",    # flake8-use-pathlib
-    "RUF",    # Ruff-specific rules
-]
 ignore = [
-    "E501",   # Line too long (handled by formatter)
-    "B008",   # Do not perform function calls in argument defaults
-    "B027",   # Empty method in abstract base class (intentional for optional hooks)
-    "C901",   # Too complex
-    "ARG001", # Unused function argument (common in protocols)
-    "SIM103", # Return condition directly (less readable)
-    "SIM108", # Use ternary operator (less readable in many cases)
-    "PTH123", # open() vs Path.open() (both are fine)
+  "E501",  # Line too long (handled by formatter)
+  "B008",  # Do not perform function calls in argument defaults
+  "B027",  # Empty method in abstract base class (intentional for optional hooks)
+  "C901",  # Too complex
+  "ARG001",  # Unused function argument (common in protocols)
+  "SIM103",  # Return condition directly (less readable)
+  "SIM108",  # Use ternary operator (less readable in many cases)
+  "PTH123"  # open() vs Path.open() (both are fine)
+]
+select = [
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # Pyflakes
+  "I",  # isort
+  "B",  # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "UP",  # pyupgrade
+  "ARG",  # flake8-unused-arguments
+  "SIM",  # flake8-simplify
+  "PTH",  # flake8-use-pathlib
+  "RUF"  # Ruff-specific rules
 ]
 
 [tool.ruff.lint.isort]
@@ -201,121 +292,11 @@ known-first-party = ["lsst_extendedness"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
-    "ARG001",  # Unused arguments in tests (fixtures)
-    "ARG002",  # Unused method arguments in tests (mock classes)
-    "B007",    # Unused loop variable (setup loops)
-    "B905",    # zip without strict= (not needed in tests)
-    "F401",    # Unused imports (optional dependency checks)
-    "F841",    # Unused variables (test setup)
-    "S101",    # Use of assert
+  "ARG001",  # Unused arguments in tests (fixtures)
+  "ARG002",  # Unused method arguments in tests (mock classes)
+  "B007",  # Unused loop variable (setup loops)
+  "B905",  # zip without strict= (not needed in tests)
+  "F401",  # Unused imports (optional dependency checks)
+  "F841",  # Unused variables (test setup)
+  "S101"  # Use of assert
 ]
-
-# ============================================================================
-# MYPY CONFIGURATION
-# ============================================================================
-[tool.mypy]
-python_version = "3.12"
-mypy_path = "src"
-explicit_package_bases = true
-strict = true
-warn_return_any = true
-warn_unused_ignores = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_configs = true
-show_error_codes = true
-show_column_numbers = true
-
-# Per-module options
-[[tool.mypy.overrides]]
-module = [
-    "confluent_kafka.*",
-    "fastavro.*",
-    "astropy.*",
-    "antares_client.*",
-    "spacerocks.*",
-]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-
-[[tool.mypy.overrides]]
-module = "lsst_extendedness.cli"
-disallow_untyped_decorators = false  # Click decorators are untyped
-
-[[tool.mypy.overrides]]
-module = "lsst_extendedness.models.runs"
-warn_unused_ignores = false  # Pydantic computed_field needs type: ignore in some mypy versions
-
-[[tool.mypy.overrides]]
-module = [
-    "lsst_alert_consumer",
-    "lsst_alert_consumer.*",
-    "utils.*",
-    "antares_extendedness_filter",
-    "__init__",
-]
-ignore_errors = true  # Legacy code being replaced
-
-# ============================================================================
-# PYTEST CONFIGURATION
-# ============================================================================
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-ra",
-    "-q",
-    "--strict-markers",
-    "--strict-config",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
-]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
-]
-
-# ============================================================================
-# COVERAGE CONFIGURATION
-# ============================================================================
-[tool.coverage.run]
-source = ["src/lsst_extendedness"]
-branch = true
-omit = [
-    "*/cli.py",  # CLI tested via integration
-    "*/__main__.py",
-]
-parallel = true
-
-[tool.coverage.report]
-fail_under = 85
-show_missing = true
-skip_empty = true
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
-]
-
-[tool.coverage.html]
-directory = "htmlcov"

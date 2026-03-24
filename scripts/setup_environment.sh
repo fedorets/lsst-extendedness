@@ -142,11 +142,11 @@ if [[ "$create_venv" =~ ^[Yy]$ ]]; then
     python3 -m venv venv
     source venv/bin/activate
     log_info "  Virtual environment created and activated"
-    
+
     # Upgrade pip
     log_info "Upgrading pip..."
     pip install --upgrade pip
-    
+
     # Install requirements if they exist
     if [ -f "requirements.txt" ]; then
         log_info "Installing Python dependencies..."

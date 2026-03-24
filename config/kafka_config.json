@@ -1,7 +1,7 @@
 {
   "_comment": "LSST Alert Pipeline - Kafka Configuration",
   "_description": "Kafka connection settings for different deployment scenarios",
-  
+
   "profiles": {
     "local": {
       "bootstrap.servers": "localhost:9092",
@@ -12,7 +12,7 @@
       "session.timeout.ms": 30000,
       "max.poll.interval.ms": 300000
     },
-    
+
     "development": {
       "bootstrap.servers": "dev-kafka-broker:9092",
       "group.id": "lsst-alert-consumer-dev",
@@ -22,7 +22,7 @@
       "session.timeout.ms": 30000,
       "max.poll.interval.ms": 300000
     },
-    
+
     "production": {
       "bootstrap.servers": "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092",
       "group.id": "lsst-alert-consumer-prod",
@@ -34,7 +34,7 @@
       "max.partition.fetch.bytes": 10485760,
       "fetch.max.wait.ms": 500
     },
-    
+
     "ssl": {
       "_comment": "For SSL/TLS encrypted connections",
       "bootstrap.servers": "secure-kafka:9093",
@@ -47,7 +47,7 @@
       "ssl.key.location": "/path/to/client-key.pem",
       "ssl.key.password": "your-key-password"
     },
-    
+
     "sasl_plain": {
       "_comment": "For SASL/PLAIN authentication",
       "bootstrap.servers": "kafka-sasl:9093",
@@ -59,7 +59,7 @@
       "sasl.username": "your-username",
       "sasl.password": "your-password"
     },
-    
+
     "sasl_scram": {
       "_comment": "For SASL/SCRAM authentication",
       "bootstrap.servers": "kafka-scram:9093",
@@ -71,7 +71,7 @@
       "sasl.username": "your-username",
       "sasl.password": "your-password"
     },
-    
+
     "confluent_cloud": {
       "_comment": "For Confluent Cloud",
       "bootstrap.servers": "pkc-xxxxx.us-west-2.aws.confluent.cloud:9092",
@@ -84,7 +84,7 @@
       "sasl.password": "API_SECRET",
       "session.timeout.ms": 45000
     },
-    
+
     "schema_registry": {
       "_comment": "With Confluent Schema Registry",
       "bootstrap.servers": "kafka-broker:9092",
@@ -95,14 +95,14 @@
       "schema.registry.basic.auth.user.info": "username:password"
     }
   },
-  
+
   "topics": {
     "development": "lsst-alerts-dev",
     "production": "lsst-alerts-prod",
     "test": "lsst-alerts-test",
     "filtered": "lsst-extendedness-filtered"
   },
-  
+
   "consumer_settings": {
     "_comment": "Common consumer settings across profiles",
     "performance": {
@@ -111,7 +111,7 @@
       "max.partition.fetch.bytes": 1048576,
       "max.poll.records": 500
     },
-    
+
     "reliability": {
       "enable.auto.commit": true,
       "auto.commit.interval.ms": 5000,
@@ -119,13 +119,13 @@
       "heartbeat.interval.ms": 3000,
       "max.poll.interval.ms": 300000
     },
-    
+
     "offset_management": {
       "auto.offset.reset": "earliest",
       "enable.auto.offset.store": true
     }
   },
-  
+
   "usage_instructions": {
     "loading": "Load in Python with: import json; config = json.load(open('kafka_config.json'))['profiles']['production']",
     "environment": "Set KAFKA_PROFILE environment variable to select profile: export KAFKA_PROFILE=production",

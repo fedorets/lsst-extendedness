@@ -1,3 +1,4 @@
+---
 # LSST Alert Pipeline - Logging Configuration
 # This file can be loaded with Python's logging.config.dictConfig()
 
@@ -6,21 +7,21 @@ disable_existing_loggers: false
 
 # Formatters define how log messages are formatted
 formatters:
-  
+
   # Standard format with timestamp
   standard:
     format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     datefmt: '%Y-%m-%d %H:%M:%S'
-  
+
   # Detailed format with thread info
   detailed:
     format: '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
     datefmt: '%Y-%m-%d %H:%M:%S'
-  
+
   # Simple format for console
   simple:
     format: '%(levelname)s - %(message)s'
-  
+
   # JSON format for structured logging
   json:
     format: '{"timestamp": "%(asctime)s", "name": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
@@ -28,14 +29,14 @@ formatters:
 
 # Handlers define where log messages go
 handlers:
-  
+
   # Console handler - prints to stdout
   console:
     class: logging.StreamHandler
     level: INFO
     formatter: simple
     stream: ext://sys.stdout
-  
+
   # Main log file - all messages
   file_main:
     class: logging.handlers.RotatingFileHandler
@@ -45,7 +46,7 @@ handlers:
     maxBytes: 10485760  # 10 MB
     backupCount: 5
     encoding: utf8
-  
+
   # Error log file - errors only
   file_error:
     class: logging.handlers.RotatingFileHandler
@@ -55,7 +56,7 @@ handlers:
     maxBytes: 5242880  # 5 MB
     backupCount: 3
     encoding: utf8
-  
+
   # Debug log file - everything
   file_debug:
     class: logging.handlers.RotatingFileHandler
@@ -65,7 +66,7 @@ handlers:
     maxBytes: 20971520  # 20 MB
     backupCount: 2
     encoding: utf8
-  
+
   # Time-rotating handler - new file each day
   file_daily:
     class: logging.handlers.TimedRotatingFileHandler
@@ -76,7 +77,7 @@ handlers:
     interval: 1
     backupCount: 30
     encoding: utf8
-  
+
   # Kafka-specific handler
   file_kafka:
     class: logging.handlers.RotatingFileHandler
@@ -89,37 +90,37 @@ handlers:
 
 # Loggers define which handlers to use for different parts of the code
 loggers:
-  
+
   # LSST consumer logger
   __main__:
     level: INFO
     handlers: [console, file_main, file_error]
     propagate: false
-  
+
   # Source package
   src:
     level: INFO
     handlers: [console, file_main, file_error]
     propagate: false
-  
+
   # Kafka-related logging
   confluent_kafka:
     level: WARNING
     handlers: [file_kafka]
     propagate: false
-  
+
   # Kafka consumer specifically
   src.utils.kafka_helpers:
     level: DEBUG
     handlers: [console, file_kafka]
     propagate: false
-  
+
   # Cutout processing
   src.utils.cutout_processor:
     level: INFO
     handlers: [file_main]
     propagate: false
-  
+
   # CSV writing
   src.utils.csv_writer:
     level: INFO
@@ -138,17 +139,17 @@ root:
 development:
   version: 1
   disable_existing_loggers: false
-  
+
   formatters:
     detailed:
       format: '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
-  
+
   handlers:
     console:
       class: logging.StreamHandler
       level: DEBUG
       formatter: detailed
-    
+
     file:
       class: logging.handlers.RotatingFileHandler
       level: DEBUG
@@ -156,7 +157,7 @@ development:
       filename: logs/development.log
       maxBytes: 10485760
       backupCount: 3
-  
+
   root:
     level: DEBUG
     handlers: [console, file]
@@ -165,17 +166,17 @@ development:
 production:
   version: 1
   disable_existing_loggers: false
-  
+
   formatters:
     standard:
       format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-  
+
   handlers:
     console:
       class: logging.StreamHandler
       level: WARNING
       formatter: standard
-    
+
     file_main:
       class: logging.handlers.RotatingFileHandler
       level: INFO
@@ -183,7 +184,7 @@ production:
       filename: logs/consumer/production.log
       maxBytes: 20971520  # 20 MB
       backupCount: 10
-    
+
     file_error:
       class: logging.handlers.RotatingFileHandler
       level: ERROR
@@ -191,7 +192,7 @@ production:
       filename: logs/error/production_errors.log
       maxBytes: 10485760  # 10 MB
       backupCount: 5
-  
+
   root:
     level: INFO
     handlers: [console, file_main, file_error]
@@ -200,17 +201,17 @@ production:
 testing:
   version: 1
   disable_existing_loggers: false
-  
+
   formatters:
     simple:
       format: '%(levelname)s - %(message)s'
-  
+
   handlers:
     console:
       class: logging.StreamHandler
       level: WARNING
       formatter: simple
-  
+
   root:
     level: WARNING
     handlers: [console]
@@ -219,11 +220,11 @@ testing:
 structured:
   version: 1
   disable_existing_loggers: false
-  
+
   formatters:
     json:
       format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "file": "%(filename)s", "line": %(lineno)d, "message": "%(message)s"}'
-  
+
   handlers:
     file_json:
       class: logging.handlers.RotatingFileHandler
@@ -232,7 +233,7 @@ structured:
       filename: logs/structured/alerts.jsonl
       maxBytes: 10485760
       backupCount: 5
-  
+
   root:
     level: INFO
     handlers: [file_json]

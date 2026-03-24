@@ -316,7 +316,9 @@ def extract_cutout_stamps(
     return stamps
 
 
-def load_cutout_as_array(path: Path | str) -> np.ndarray:
+def load_cutout_as_array(
+    path: Path | str,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.floating[Any]]]:
     """Load a FITS cutout as numpy array.
 
     Args:

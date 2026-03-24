@@ -11,256 +11,154 @@
 # Example: LSST_DATABASE_PATH=/path/to/db.sqlite
 # ============================================================================
 
-[general]
-# Pipeline name (used in logging)
-name = "lsst-extendedness"
-
-# Log level: DEBUG, INFO, WARNING, ERROR
-log_level = "INFO"
-
-# Base directory for data (relative to project root or absolute)
-base_dir = "data"
-
-# ============================================================================
-# DATABASE CONFIGURATION
-# ============================================================================
-
-[database]
-# SQLite database path (relative to base_dir or absolute)
-path = "lsst_extendedness.db"
-
-# Connection pool settings
-pool_size = 5
-timeout_seconds = 30
-
-# Enable WAL mode for better concurrent access
-wal_mode = true
-
-# Backup settings
-backup_enabled = true
-backup_dir = "backups"
-backup_retention_days = 30
-
-# ============================================================================
-# KAFKA CONFIGURATION
-# ============================================================================
-# For production settings, see config/kafka_profiles.toml
-
-[kafka]
-# Kafka profile to use (defined in kafka_profiles.toml)
-profile = "default"
-
-# Topic to consume from
-topic = "lsst-extendedness-filtered"
-
-# Consumer group ID
-group_id = "lsst-extendedness-consumer"
-
-# Where to start reading: earliest, latest, or stored
-auto_offset_reset = "earliest"
-
-# Auto-commit settings
-enable_auto_commit = true
-auto_commit_interval_ms = 5000
-
-# Performance tuning
-max_poll_interval_ms = 300000  # 5 minutes
-session_timeout_ms = 30000     # 30 seconds
-fetch_max_bytes = 52428800     # 50 MB
-
-# ============================================================================
-# INGESTION CONFIGURATION
-# ============================================================================
-
-[ingestion]
-# Maximum runtime per execution (seconds, null = indefinite)
-duration_seconds = 3600  # 1 hour
-
-# Maximum messages to process (null = unlimited)
-max_messages = 10000
-
-# Batch size for database writes
-batch_size = 100
-
-# Poll timeout (seconds)
-poll_timeout = 1.0
-
-# Enable cutout extraction
-extract_cutouts = true
-
-# Cutout types to save
-cutout_types = ["science", "template", "difference"]
-
-# ============================================================================
-# CUTOUT CONFIGURATION
-# ============================================================================
-
 [cutouts]
-# Output directory (relative to base_dir)
-output_dir = "cutouts"
-
+# Create PNG thumbnails (requires Pillow)
+create_thumbnails = false
 # Date-based organization format
 date_format = "%Y/%m/%d"
-
+# Output directory (relative to base_dir)
+output_dir = "cutouts"
+# Retention (days, null = keep forever)
+retention_days = 90
+thumbnail_size = [100, 100]
 # Enable validation after save
 validate_on_save = false
 
-# Create PNG thumbnails (requires Pillow)
-create_thumbnails = false
-thumbnail_size = [100, 100]
-
-# Retention (days, null = keep forever)
-retention_days = 90
-
-# ============================================================================
-# FILTER CONFIGURATION
-# ============================================================================
-# Default filter applied during ingestion
-
-[filter]
-# Enable filtering
-enabled = false
-
-# Extendedness thresholds (omit or set a value to enable filtering)
-# extendedness_median_min = 0.0
-# extendedness_median_max = 1.0
-# extendedness_min_threshold = 0.0
-# extendedness_max_threshold = 1.0
-
-# SSObject requirement
-require_sso = false  # true = require, false = no filter, "exclude" = exclude SSO
-
-# SNR threshold
-# min_snr = 5.0
-
-# Custom SQL WHERE clause (added to filters)
-# custom_sql = "extendedness_median > 0.3"
-
-# ============================================================================
-# POST-PROCESSING CONFIGURATION
-# ============================================================================
-
-[processing]
-# Enable auto-discovery of processors
-auto_discover = true
-
-# Directories to search for processors (relative to project root)
-plugin_dirs = ["processing/plugins"]
-
-# Default processing window (days)
-default_window_days = 15
-
-# Run processors automatically after ingestion
-run_after_ingest = false
-
-# Processors to run (omit to run all discovered)
-# processors = ["minimoon_detector"]
-
-# ============================================================================
-# QUERY CONFIGURATION
-# ============================================================================
-
-[query]
-# Default limit for queries
-default_limit = 1000
-
-# Maximum limit
-max_limit = 100000
-
-# Enable query caching
-cache_enabled = true
-cache_ttl_seconds = 300
-
-# ============================================================================
-# LOGGING CONFIGURATION
-# ============================================================================
-
-[logging]
-# Log format: json, console
-format = "console"
-
-# Include timestamps
-include_timestamp = true
-
-# Include source location
-include_location = false
-
-# Log file settings
-file_enabled = true
-file_path = "logs/lsst_extendedness.log"
-file_rotation = "10 MB"
-file_retention = 5
-
-# Separate error log
-error_file_enabled = true
-error_file_path = "logs/errors.log"
-
-# ============================================================================
-# ALERT FIELD CONFIGURATION
-# ============================================================================
-# Fields to extract from alerts
+[database]
+backup_dir = "backups"
+# Backup settings
+backup_enabled = true
+backup_retention_days = 30
+# SQLite database path (relative to base_dir or absolute)
+path = "lsst_extendedness.db"
+# Connection pool settings
+pool_size = 5
+timeout_seconds = 30
+# Enable WAL mode for better concurrent access
+wal_mode = true
 
 [fields]
 # Core DIASource fields (always extracted)
 diasource_core = [
-    "diaSourceId",
-    "diaObjectId",
-    "ra",
-    "decl",
-    "midPointTai",
-    "filterName",
-    "psFlux",
-    "psFluxErr",
-    "snr",
+  "diaSourceId",
+  "diaObjectId",
+  "ra",
+  "decl",
+  "midPointTai",
+  "filterName",
+  "psFlux",
+  "psFluxErr",
+  "snr"
 ]
-
 # Extendedness fields
 extendedness = [
-    "extendednessMedian",
-    "extendednessMin",
-    "extendednessMax",
+  "extendednessMedian",
+  "extendednessMin",
+  "extendednessMax"
 ]
-
-# Extract all trail* fields automatically
-extract_trail_fields = true
-
 # Extract all pixelFlags* fields automatically
 extract_pixel_flags = true
-
+# Extract all trail* fields automatically
+extract_trail_fields = true
 # SSObject fields (when present)
 ssobject = [
-    "ssObjectId",
-    "ssObjectReassocTimeMjdTai",
+  "ssObjectId",
+  "ssObjectReassocTimeMjdTai"
 ]
 
-# ============================================================================
-# STATE TRACKING CONFIGURATION
-# ============================================================================
+[filter]
+# Enable filtering
+enabled = false
+# SSObject requirement
+require_sso = false  # true = require, false = no filter, "exclude" = exclude SSO
 
-[state]
-# Track processed sources for reassociation detection
-track_reassociations = true
+[general]
+# Base directory for data (relative to project root or absolute)
+base_dir = "data"
+# Log level: DEBUG, INFO, WARNING, ERROR
+log_level = "INFO"
+# Pipeline name (used in logging)
+name = "lsst-extendedness"
 
-# State cleanup (days since last seen)
-cleanup_after_days = 90
+[ingestion]
+# Batch size for database writes
+batch_size = 100
+# Cutout types to save
+cutout_types = ["science", "template", "difference"]
+# Maximum runtime per execution (seconds, null = indefinite)
+duration_seconds = 3600  # 1 hour
+# Enable cutout extraction
+extract_cutouts = true
+# Maximum messages to process (null = unlimited)
+max_messages = 10000
+# Poll timeout (seconds)
+poll_timeout = 1.0
 
-# Maximum tracked sources (oldest removed first)
-max_tracked_sources = 1000000
+[kafka]
+auto_commit_interval_ms = 5000
+# Where to start reading: earliest, latest, or stored
+auto_offset_reset = "earliest"
+# Auto-commit settings
+enable_auto_commit = true
+fetch_max_bytes = 52428800  # 50 MB
+# Consumer group ID
+group_id = "lsst-extendedness-consumer"
+# Performance tuning
+max_poll_interval_ms = 300000  # 5 minutes
+# Kafka profile to use (defined in kafka_profiles.toml)
+profile = "default"
+session_timeout_ms = 30000  # 30 seconds
+# Topic to consume from
+topic = "lsst-extendedness-filtered"
 
-# ============================================================================
-# RETENTION CONFIGURATION
-# ============================================================================
+[logging]
+# Separate error log
+error_file_enabled = true
+error_file_path = "logs/errors.log"
+# Log file settings
+file_enabled = true
+file_path = "logs/lsst_extendedness.log"
+file_retention = 5
+file_rotation = "10 MB"
+# Log format: json, console
+format = "console"
+# Include source location
+include_location = false
+# Include timestamps
+include_timestamp = true
+
+[processing]
+# Enable auto-discovery of processors
+auto_discover = true
+# Default processing window (days)
+default_window_days = 15
+# Directories to search for processors (relative to project root)
+plugin_dirs = ["processing/plugins"]
+# Run processors automatically after ingestion
+run_after_ingest = false
+
+[query]
+# Enable query caching
+cache_enabled = true
+cache_ttl_seconds = 300
+# Default limit for queries
+default_limit = 1000
+# Maximum limit
+max_limit = 100000
 
 [retention]
-# CSV files (days, omit to keep forever)
-# csv_days = 90
-
-# Cutouts (days, null = keep forever)
-cutout_days = 90
-
-# Logs (days)
-log_days = 60
-
 # Archive before deletion
 archive_before_delete = true
 archive_dir = "archive"
+# Cutouts (days, null = keep forever)
+cutout_days = 90
+# Logs (days)
+log_days = 60
+
+[state]
+# State cleanup (days since last seen)
+cleanup_after_days = 90
+# Maximum tracked sources (oldest removed first)
+max_tracked_sources = 1000000
+# Track processed sources for reassociation detection
+track_reassociations = true

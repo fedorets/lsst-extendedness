@@ -60,7 +60,7 @@ class FilterCondition:
         elif self.operator == FilterOperator.BETWEEN:
             return f"{self.field} BETWEEN ? AND ?", [self.value, self.value2]
         elif self.operator in (FilterOperator.IN, FilterOperator.NOT_IN):
-            if not isinstance(self.value, (list, tuple)):
+            if not isinstance(self.value, list | tuple):
                 raise ValueError(f"IN operator requires list, got {type(self.value)}")
             placeholders = ", ".join("?" * len(self.value))
             return f"{self.field} {self.operator.value} ({placeholders})", list(self.value)

@@ -114,7 +114,7 @@ python3 lsst_alert_consumer.py
    ```
    # Every 6 hours
    0 */6 * * * /path/to/run_lsst_consumer.sh >> /var/log/lsst_consumer.log 2>&1
-   
+
    # Twice daily (2 AM and 2 PM)
    0 2,14 * * * /path/to/run_lsst_consumer.sh >> /var/log/lsst_consumer.log 2>&1
    ```

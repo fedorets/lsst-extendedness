@@ -48,38 +48,38 @@ archive_and_delete() {
     local source_dir="$1"
     local retention_days="$2"
     local archive_name="$3"
-    
+
     if [ ! -d "$source_dir" ]; then
         log "Directory not found: $source_dir (skipping)"
         return
     fi
-    
+
     # Find directories older than retention period
     old_dirs=$(find "$source_dir" -mindepth 1 -maxdepth 3 -type d -mtime +$retention_days 2>/dev/null || true)
-    
+
     if [ -z "$old_dirs" ]; then
         log "No old directories found in $source_dir"
         return
     fi
-    
+
     log "Found old directories in $source_dir:"
     echo "$old_dirs" | while read dir; do
         log "  - $dir"
     done
-    
+
     if [ "$ARCHIVE_BEFORE_DELETE" = "true" ]; then
         # Create archive directory
         mkdir -p "$ARCHIVE_DIR/$(date +%Y)"
-        
+
         # Archive each old directory
         echo "$old_dirs" | while read dir; do
             if [ -d "$dir" ]; then
                 dir_name=$(basename "$dir")
                 parent_name=$(basename "$(dirname "$dir")")
                 archive_file="$ARCHIVE_DIR/$(date +%Y)/${archive_name}_${parent_name}_${dir_name}_$(date +%Y%m%d).tar.gz"
-                
+
                 log "Archiving: $dir -> $archive_file"
-                
+
                 if [ "$DRY_RUN" = "false" ]; then
                     tar -czf "$archive_file" -C "$(dirname "$dir")" "$(basename "$dir")" 2>&1 | tee -a "$LOG_FILE"
                     if [ ${PIPESTATUS[0]} -eq 0 ]; then
@@ -116,23 +116,23 @@ clean_old_files() {
     local dir="$1"
     local pattern="$2"
     local retention_days="$3"
-    
+
     if [ ! -d "$dir" ]; then
         log "Directory not found: $dir (skipping)"
         return
     fi
-    
+
     log "Cleaning old files in $dir (pattern: $pattern, age: >$retention_days days)"
-    
+
     count=$(find "$dir" -name "$pattern" -type f -mtime +$retention_days 2>/dev/null | wc -l || echo 0)
-    
+
     if [ "$count" -eq 0 ]; then
         log "No old files found matching pattern $pattern"
         return
     fi
-    
+
     log "Found $count old files"
-    
+
     if [ "$DRY_RUN" = "false" ]; then
         find "$dir" -name "$pattern" -type f -mtime +$retention_days -delete 2>&1 | tee -a "$LOG_FILE"
         log "Deleted $count files"

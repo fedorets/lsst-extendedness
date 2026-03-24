@@ -3,19 +3,19 @@
 # ANTARES client for broker integration
 antares-client>=1.3.0
 
-# Kafka client
-confluent-kafka>=2.0.0
-
-# Avro serialization
-fastavro>=1.8.0
-
-# Data processing
-pandas>=1.5.0
-numpy>=1.23.0
-
 # Astronomy tools
 astropy>=5.0.0
 
+# Kafka client
+confluent-kafka>=2.0.0
+
 # Optional: for schema registry
 confluent-kafka[avro]>=2.0.0
+
+# Avro serialization
+fastavro>=1.8.0
+numpy>=1.23.0
+
+# Data processing
+pandas>=1.5.0
 requests>=2.28.0

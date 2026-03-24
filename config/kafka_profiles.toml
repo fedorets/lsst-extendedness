@@ -8,24 +8,39 @@
 # Profiles inherit from [default] and can override any setting.
 # ============================================================================
 
+[antares]
+bootstrap_servers = "kafka.antares.noirlab.edu:9092"
+# Performance tuning for ANTARES
+fetch_max_bytes = 104857600  # 100 MB (large alert packets)
+max_poll_interval_ms = 600000  # 10 minutes (slow processing OK)
+sasl_mechanisms = "PLAIN"
+sasl_password = "${LSST_KAFKA_SASL_PASSWORD}"
+# Credentials (set via environment variables)
+# LSST_KAFKA_SASL_USERNAME = "your-username"
+# LSST_KAFKA_SASL_PASSWORD = "your-password"
+sasl_username = "${LSST_KAFKA_SASL_USERNAME}"
+# ANTARES uses SASL_SSL
+security_protocol = "SASL_SSL"
+# SSL settings
+ssl_ca_location = "/etc/ssl/certs/ca-certificates.crt"
+# ANTARES specific settings
+topic_prefix = "antares."
+
 # ============================================================================
 # DEFAULT PROFILE (base settings)
 # ============================================================================
 [default]
-# Kafka bootstrap servers
-bootstrap_servers = "localhost:9092"
-
-# Security settings (none by default)
-security_protocol = "PLAINTEXT"
-
-# Consumer tuning
-fetch_min_bytes = 1
-fetch_max_wait_ms = 500
-max_partition_fetch_bytes = 1048576  # 1 MB
-
 # Producer tuning (if needed for responses)
 acks = "all"
+# Kafka bootstrap servers
+bootstrap_servers = "localhost:9092"
+fetch_max_wait_ms = 500
+# Consumer tuning
+fetch_min_bytes = 1
+max_partition_fetch_bytes = 1048576  # 1 MB
 retries = 3
+# Security settings (none by default)
+security_protocol = "PLAINTEXT"
 
 # ============================================================================
 # LOCAL DEVELOPMENT
@@ -33,74 +48,38 @@ retries = 3
 [local]
 # Inherits from default
 bootstrap_servers = "localhost:9092"
-
-# Local testing topic
-topic_suffix = "-dev"
-
 # Debug settings
 debug = "consumer,cgrp,topic"
-
-# ============================================================================
-# ANTARES BROKER
-# ============================================================================
-# Configuration for connecting to the ANTARES broker
-# See: https://antares.noirlab.edu/
-
-[antares]
-bootstrap_servers = "kafka.antares.noirlab.edu:9092"
-
-# ANTARES uses SASL_SSL
-security_protocol = "SASL_SSL"
-sasl_mechanisms = "PLAIN"
-
-# Credentials (set via environment variables)
-# LSST_KAFKA_SASL_USERNAME = "your-username"
-# LSST_KAFKA_SASL_PASSWORD = "your-password"
-sasl_username = "${LSST_KAFKA_SASL_USERNAME}"
-sasl_password = "${LSST_KAFKA_SASL_PASSWORD}"
-
-# SSL settings
-ssl_ca_location = "/etc/ssl/certs/ca-certificates.crt"
-
-# ANTARES specific settings
-topic_prefix = "antares."
-
-# Performance tuning for ANTARES
-fetch_max_bytes = 104857600  # 100 MB (large alert packets)
-max_poll_interval_ms = 600000  # 10 minutes (slow processing OK)
+# Local testing topic
+topic_suffix = "-dev"
 
 # ============================================================================
 # PRODUCTION
 # ============================================================================
 [production]
 bootstrap_servers = "kafka.example.com:9093"
-
+# Reliability settings
+enable_auto_commit = false  # Manual commits for exactly-once
+# Production tuning
+fetch_max_bytes = 52428800  # 50 MB
+heartbeat_interval_ms = 10000
+isolation_level = "read_committed"
+max_poll_interval_ms = 300000
 # TLS encryption
 security_protocol = "SSL"
+session_timeout_ms = 30000
 ssl_ca_location = "/etc/ssl/certs/ca-certificates.crt"
 ssl_certificate_location = "/path/to/client.crt"
 ssl_key_location = "/path/to/client.key"
-
-# Production tuning
-fetch_max_bytes = 52428800  # 50 MB
-session_timeout_ms = 30000
-heartbeat_interval_ms = 10000
-max_poll_interval_ms = 300000
-
-# Reliability settings
-enable_auto_commit = false  # Manual commits for exactly-once
-isolation_level = "read_committed"
 
 # ============================================================================
 # STAGING
 # ============================================================================
 [staging]
 bootstrap_servers = "kafka-staging.example.com:9092"
-
 # Copy production security settings
 security_protocol = "SSL"
 ssl_ca_location = "/etc/ssl/certs/ca-certificates.crt"
-
 # Staging topic prefix
 topic_prefix = "staging-"
 
@@ -108,33 +87,30 @@ topic_prefix = "staging-"
 # TESTING (for unit/integration tests)
 # ============================================================================
 [testing]
-bootstrap_servers = "localhost:9092"
-
-# Fast timeout for tests
-session_timeout_ms = 6000
-heartbeat_interval_ms = 2000
-max_poll_interval_ms = 10000
-
-# Test consumer group (auto-generated suffix)
-group_id_prefix = "test-"
-
 # Auto-delete test topics
 # (requires admin permissions)
 auto_delete_topics = true
+bootstrap_servers = "localhost:9092"
+# Test consumer group (auto-generated suffix)
+group_id_prefix = "test-"
+heartbeat_interval_ms = 2000
+max_poll_interval_ms = 10000
+# Fast timeout for tests
+session_timeout_ms = 6000
 
 # ============================================================================
 # PROFILE USAGE EXAMPLES
 # ============================================================================
 #
 # 1. In config/local.toml:
-#    [kafka]
-#    profile = "antares"
-#    topic = "antares.lsst.extendedness.filtered"
+# [kafka]
+# profile = "antares"
+# topic = "antares.lsst.extendedness.filtered"
 #
 # 2. Via environment variable:
-#    LSST_KAFKA_PROFILE=production make ingest
+# LSST_KAFKA_PROFILE=production make ingest
 #
 # 3. Via command line:
-#    lsst-ingest --kafka-profile production --topic my-topic
+# lsst-ingest --kafka-profile production --topic my-topic
 #
 # ============================================================================
