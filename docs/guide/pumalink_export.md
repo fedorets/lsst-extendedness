@@ -166,3 +166,5 @@ usage: export_to_pumalink.py [-h]
 | `--filtered-only`        | Include only alerts in `alerts_filtered` table (`--db`)       |
 | `--mjd-min MJD`          | Exclude observations before this MJD                          |
 | `--mjd-max MJD`          | Exclude observations after this MJD                           |
+
+See [Export Format Comparison](export_comparison.md) for a side-by-side overview of the Pumalink and THOR export scripts.

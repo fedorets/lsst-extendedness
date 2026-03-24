@@ -35,6 +35,8 @@ pdm run lsst-extendedness ingest --source mock --count 100
 - [**Post-Processing**](guide/processing.md) - Run analysis, create custom processors
 - [**Querying**](guide/querying.md) - Query data and export results
 - [**Pumalink Export**](guide/pumalink_export.md) - Export detections to Pumalink TRD9 format
+- [**THOR Export**](guide/thor_export.md) - Export detections to THOR InputObservations format
+- [**Export Comparison**](guide/export_comparison.md) - Side-by-side comparison of export scripts
 
 ### API Reference
 
