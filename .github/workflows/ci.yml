@@ -29,10 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Python 3.13
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.13'
 
@@ -40,7 +40,7 @@ jobs:
       run: pip install pdm
 
     - name: Cache PDM dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v5
       with:
         path: |
           .venv
@@ -80,7 +80,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Install system dependencies
       run: |
@@ -88,7 +88,7 @@ jobs:
         sudo apt-get install -y librdkafka-dev libopenblas-dev
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -96,7 +96,7 @@ jobs:
       run: pip install pdm
 
     - name: Cache PDM dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v5
       with:
         path: |
           .venv
@@ -118,7 +118,7 @@ jobs:
           --cov-report=term-missing
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v6
       if: matrix.python-version == '3.13'
       with:
         files: coverage.xml
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Install system dependencies
       run: |
@@ -142,7 +142,7 @@ jobs:
         sudo apt-get install -y librdkafka-dev
 
     - name: Set up Python 3.13
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.13'
 
@@ -150,7 +150,7 @@ jobs:
       run: pip install pdm
 
     - name: Cache PDM dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v5
       with:
         path: |
           .venv
@@ -177,13 +177,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 2    # Need history for file change detection
 
     - name: Check for dependency changes
       id: changes
-      uses: dorny/paths-filter@v3
+      uses: dorny/paths-filter@v4
       with:
         filters: |
           deps:
