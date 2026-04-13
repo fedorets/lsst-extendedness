@@ -18,7 +18,7 @@ classifiers = [
 dependencies = [
   # Core
   "pydantic>=2.5.0",
-  "click>=8.1.0",
+  "click>=8.3.2",
   "rich>=13.0.0",
   # Kafka & Serialization
   "confluent-kafka>=2.3.0",
