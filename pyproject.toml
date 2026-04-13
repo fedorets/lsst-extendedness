@@ -66,7 +66,7 @@ dev = [
   "pandas-stubs>=2.1.0",
   "types-requests>=2.31.0",
   # Pre-commit
-  "pre-commit>=3.6.0",
+  "pre-commit>=4.5.1",
   # Documentation
   "mkdocs>=1.5.0",
   "mkdocs-material>=9.5.0",
@@ -196,7 +196,7 @@ dev = [
   "mypy>=1.7.0",
   "pandas-stubs>=2.1.0",
   "types-requests>=2.31.0",
-  "pre-commit>=3.6.0"
+  "pre-commit>=4.5.1"
 ]
 
 # Note: antares-client depends on bson which only supports Python 3.6
